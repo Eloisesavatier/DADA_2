@@ -1,0 +1,19 @@
+---
+title: "R Notebook"
+output: github_document
+---
+
+```{bash}
+wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
+unzip miseqsopdata.zip
+```
+
+
+```{bash}
+wget https://zenodo.org/records/14169026/files/silva_nr99_v138.2_toGenus_trainset.fa.gz
+```
+
+
+```{bash}
+wget https://zenodo.org/records/14169026/files/silva_v138.2_assignSpecies.fa.gz
+```
