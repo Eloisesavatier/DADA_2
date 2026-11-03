@@ -2,11 +2,20 @@
 title: "R Notebook"
 output: github_document
 ---
+# Téléchargement des données fastq de l'article de Kozich et al. 
 
 ```{bash}
 wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
 unzip miseqsopdata.zip
 ```
+
+# Commentaire
+
+Cette commande en bash permet de télécharger directement les données d'exemple officielles du protocole MiSeq SOP qui sont utilisées dans l'article de Kozich et al. et le tutoriel DADA2, depuis le serveur de mothur, puis de les décompresser dans l'environnement de travail.
+
+*wget* télécharge l'archive ZIP contenant les fichiers FASTQ bruts.
+
+*unzip* permet d'extraire cette archive pour créer le répertoire de travail.
 
 
 ```{bash}

@@ -2,6 +2,9 @@
 title: "R Notebook"
 output: github_document
 ---
+
+# Installation de bioconductor et de dada2
+
 ```{r}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -16,8 +19,7 @@ BiocManager::install("DECIPHER")
 ```
 
 
-
-# Install phyloseq
+# Installation de phyloseq
 
 ```{r}
 install.packages("igraph", type = "source")

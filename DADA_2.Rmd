@@ -2,85 +2,236 @@
 title: "R Notebook"
 output: github_document
 ---
-# Getting ready
+
+# Tutoriel DADA2 
+
+## Principe de DADA2
+
+Le principe de DADA2 (Divisive Amplicon Denoising Algorithm) repose sur une approche statistique et paramétrique conçue pour corriger les erreurs de séquençage d'Illumina et identifier, retrouver les vraies séquences biologiques présentes dans l’échantillon (les ASV, Amplicon Sequence Variants) en distinguant les variants réels des erreurs de séquençage, sans passer par le regroupement arbitraire en OTU (généralement à 97% de similarité).
+
+Les grandes étapes et les principes clés de son fonctionnement :
+
+  - Modélisation des erreurs (Error Rates) : Contrairement aux méthodes traditionnelles qui utilisent des filtres de qualité fixes, DADA2 apprend un modèle d'erreur spécifique à partir de propres données de séquençage. Il estime la probabilité qu'un nucléotide soit substitué par un autre en fonction des scores de qualité Phred fournis par la machine.
+  
+  - Correction des erreurs : Grâce à DADA 2, l'algorithme discerne le bruit de séquençage et de PCR des réelles variations biologiques. Il corrige les erreurs de lecture pour identifier les séquences uniques exactes (les ASV).
+  
+  - Fusion des lectures appariées (Merge Pairs) : Pour les amplicons dont les lectures avant (R1) et arrière (R2) se chevauchent (comme la région V4), DADA2 assemble les paires pour reconstituer la séquence complète avec une grande pécision.
+  
+  - Suppression des chimères : L'algorithme détecte et élimine les séquences chimériques (artefacts de PCR formés par la fusion de deux templates différents), qui fausseraient l'estimation de la diversité microbienne.
+  
+  - DADA2 permet de distinguer des souches bactériennes très proches.
+  
+On utilise a la fin le package phyloseq qui est utilisé pour l'analyse des données de microbiote.
+
+# Préparation
+
+Il faut d'abord installer le package *"dada2"*. L'installation de Bioconductor et dada2 se trouve dans le document install.
 
 ```{r}
 library(dada2); packageVersion("dada2")
 ```
 
+### Commentaires
+
+En exécutant cette commande on charge le package dada2. Cela permet de mettre les méthodes d'inférence d'erreurs et de génération d'ASV. Ce qui est affiché c'est le numéro de version et cela garantit la reproductibilité de l'analyse.
 
 ```{r}
 path <- "/home/rstudio/DADA_2/MiSeq_SOP"
+# Après avoir décompressé le fichier, accédez au répertoire contenant les fichiers fastq.
 list.files(path)
 ```
 
+### Commentaires
+
+Ces lignes de code permettent de définir le chemin d'accès vers un dossier de travail contenant les données du tutoriel DADA2 (path), puis de lister les fichiers qui s'y trouvent (list.files(path)).
+
+Cela permet de vérifier que l'on est bien positionné dans le bon dossier et que l'on a accès aux fichiers de séquençage bruts au format FASTQ (nommés avec des motifs comme _R1_001.fastq et _R2_001.fastq) avant de lancer le traitement.
+
+Le téléchargement des données MiSeq_SOP se situe dans le document import_data.
+
 
 ```{r}
-# Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
+# Les noms de fichiers fastq «forward» et «reverse» ont le format suivant : SAMPLENAME_R1_001.fastq et SAMPLENAME_R2_001.fastq
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))
-# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
+# Extraire les noms d'échantillons, en partant du principe que les noms de fichiers respectent le format : SAMPLENAME_XXX.fastq
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 ```
 
+### Commentaires
+
+Ce bloc de code permet de localiser, trier et structurer les fichiers de séquençage bruts (au format FASTQ) pour que R puisse les traiter de manière ordonnée. En fonction des données d'un article le nom des fastq peuvent changer. 
+
+*fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))*
+  - Recherche dans le dossier *path* tous les fichiers correspondant au motif des lectures "avant" (forward) : _R1_001.fastq.
+  - *full.names = TRUE* permet de récupèrer le chemin d'accès complet (et pas seulement le nom du fichier).
+  - *sort()* permet de trier les fichiers par ordre alphabétique pour s'assurer que les lectures forward et reverse correspondent bien dans le même ordre par la suite.
+
+*fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))*
+  - Fait exactement la même chose pour les lectures "arrière" (reverse), identifiées par le motif _R2_001.fastq.
+  
+*sample.names <- sapply(strsplit(basename(fnFs), "_"), "[", 1)*
+  - Permet d'extraire automatiquement le nom de chaque échantillon (*sample.names*).
+  - Il prend le nom de base du fichier (*basename*), le découpe à chaque caractère souligné (*_*) grâce à *strsplit*, et récupère le premier élément (*[ 1 ]*), qui correspond précisément au nom de l'échantillon.
+ 
 
 
-# Inspect read quality profiles
+Maintenant que les fichiers sont bien identifiés et associés à leurs noms d'échantillons, la suite consiste à inspecter les profils de qualité de ces lectures (plotQualityProfile) pour décider où couper/filtrer les séquences.
+
+# Inspecter les profils de qualité de lecture
+
+## Visualisation des profils de qualité des lectures directes
 
 ```{r}
 plotQualityProfile(fnFs[1:2])
 ```
+### Commentaires
+
+Ce code permet de contrôler la qualité des données brutes. Elle génère un graphique représentant les profils de qualité des scores Phred pour les lectures forward (R1) des deux premiers échantillons. 
+
+### Interprétation
+
+  - Axe X (horizontal) représente la position du nucléotide le long de la lecture (de la 1ère base jusqu'à la fin, par exemple 250 pb).
+  - Axe Y (vertical) Représente le score de qualité Phred.
+  - La carte thermique en niveaux de gris représente la fréquence de chaque score de qualité à chaque position de base. 
+  - La ligne verte est le scores de qualité moyen à chaque position.
+  - La ligne orange réprésente les quartiles de la distribution des scores de qualité.
+  - La ligne rouge indique la proportion normalisée de lectures s'étendant au moins jusqu'à cette position.
+  
+Au début de la lecture, les scores sont généralement très élevés (souvent au-dessus de 35 ou 40), ce qui indique une excellente fiabilité des premiers nucléotides séquencés.
+
+Vers la fin de la lecture, on observe presque toujours une chute progressive des scores de qualité. Cette dégradation est propre à la technologie de séquençage Illumina (perte de synchronisation des clusters au fil des cycles).
+
+Dans l'article de Kozich et al. (2013), les auteurs soulignent ce phénomène dans leur étude : « les erreurs augmentent sur la longueur des lectures, la seconde lecture ayant un taux d'erreur plus élevé que la première ».
+
+Il faut supprimer les derniers nucléotides afin d'éviter les erreurs moins bien contrôlées qui peuvent survenir à cet endroit. Ici, on enlève les séquences directes à la position **240**, là où commence les pics.
 
 
 ```{r}
 plotQualityProfile(fnRs[1:2])
 ```
+### Commentaires
+
+Cette commande est exactement la même que la précédente, mais cette fois c'est pour les lectures "arrière" (reverse). Donc ce code génère un graphique représentant les profils de qualité des scores Phred pour les lectures reverse (R2) des deux premiers échantillons. 
+
+### Interprétation
+
+Il y a une qualité plus faible que les lectures forward. Si on observez ce graphique à côté de celui des R1, on remarquere que les scores de qualité chutent beaucoup plus rapidement et de manière plus marquée sur les lectures reverse (R2).
+
+Il faut supprimer les derniers nucléotides afin d'éviter les erreurs moins bien contrôlées qui peuvent survenir à cet endroit. Ici, on enlève les séquences directes à la position **160**, là où commence les pics.
+
+Il faut faire attention quand on tronque car si on coupe trop les séquences ne pourrons pas se renconter et aussi si on en laisse trop il ne pourrons pas se reconnaitre. Il faut laisser environ 20 nucléotides en commun. Les séquences doivent se chevaucher après troncature afin de pouvoir être fusionnées. 
+
+Ici dans l'article on utilise des données de séquençage V4 donc 2x250, ce qui permet un chevauchement quasi complet des séquences directes et inverses en se basant sur un rognage entièrement guidé par les scores de qualité.
 
 
-
-# Filter and trim
+# Filtrer et découper
 
 ```{r}
-# Place filtered files in filtered/ subdirectory
+# Placer les fichiers filtrés dans le sous-répertoire « filtered/ »
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 ```
 
+### Commentaires
+
+Ces lignes de code servent à préparer les chemins de destination et les noms des fichiers filtrés qui seront générés lors de la prochaine étape de nettoyage.
+
+*filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))*
+  - Crée les chemins d'accès complets où seront stockés les fichiers forward (R1) après filtrage.
+  - *file.path* assemble proprement les dossiers.
+  - *paste0(sample.names, "_F_filt.fastq.gz")* prend chaque nom d'échantillon et lui ajoute le suffixe *_F_filt.fastq.gz* (indiquant qu'il s'agit du fichier forward filtré et compressé).
+  - Le dossier de destination sera un sous-dossier nommé *filtered* à l'intérieur de votre répertoire de travail (*path*).
+
+*filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))*
+  - Fait exactement la même chose pour les fichiers reverse (R2), en leur attribuant le suffixe *_R_filt.fastq.gz* dans le même sous-dossier *filtered*
+
+*names(filtFs) <- sample.names* et *names(filtRs) <- sample.names*
+  - Associent un nom à chaque élément de ces vecteurs. Cela permet à DADA2 de garder une correspondance propre entre chaque fichier de sortie et son échantillon d'origine. 
+
 
 ```{r}
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
-              compress=TRUE, multithread=FALSE) # On Windows set multithread=FALSE (only needed for filterAndTrim)
+              compress=TRUE, multithread=FALSE)
 head(out)
 ```
 
+### Commentaires
+
+Cette commande réalise le filtrage et le rognage (trimming) des lectures de séquençage, puis stocke les résultats dans la variable *out* dont *head(out)* affiche les premières lignes.
+
+Plus en détail :
+
+  - *fnFs*, *filtFs*, *fnRs*, *filtRs* sont les fichiers d'entrée (forward et reverse bruts) et les fichiers de sortie.
+  - truncLen = c(240, 160) c'est lui qui rogne en longueur.
+    - 240 : Tronque les lectures forward (R1) à 240 nucléotides.
+    - 160 : Tronque les lectures reverse (R2) à 160 nucléotides.
+  
+Nous utiliserons les paramètres de filtrage standard.
+  - *maxN = 0* interdit la présence de bases ambiguës. Tout read contenant un N sera éliminé.
+  - *maxEE = c(2, 2)* est le nombre maximal d'erreurs attendues (Expected Errors) autorisé par read. Ici, on autorise au maximum 2 erreurs cumulées par read forward et 2 par read reverse. C'est un filtre de qualité beaucoup plus rigoureux que de se baser uniquement sur une moyenne.
+  - *truncQ = 2* Permet de tronques une lecture dès qu'il rencontre un score de qualité Phred inférieur ou égal à 2.
+  - *rm.phix = TRUE* Permet de supprimer automatiquement les reads correspondant au génome du phage PhiX
+  - *compress = TRUE* Permet de compresser les fichiers de sortie au format .fastq.gz.
+  - *multithread = FALSE* Permet de désactiver le calcul en parallèle.
+  - *out* est un tableau de comptage qui résume, pour chaque échantillon, le nombre de reads en entrée (reads in) et le nombre de reads conservés après filtrage (reads out).
+  - La commande head(out) permet d'afficher les 6 premières lignes de ce tableau pour vérifier rapidement que la grande majorité des reads passe les filtres
 
 
-# Learn the Error Rates
+# Les taux d'erreur
+
+L'algorithme DADA2 utilise un modèle d'erreur paramétrique *err* et chaque jeu de données d'amplicons possède un ensemble différent de taux d'erreur. 
 
 ```{r}
 errF <- learnErrors(filtFs, multithread=TRUE)
 ```
 
+### Commentaires
+
+*learnErrors* C'est la fonction qui analyse les fichiers de séquences filtrés pour calculer le taux d'erreur de la machine de séquençage.
+
+*filtFs* c'est le vecteur contenant les chemins vers vos fichiers de lecture forward filtrés.
+
+*multithread = TRUE* Permet d'activer le calcul en parallèle sur plusieurs cœurs du processeur pour accélérer cette étape qui demande pas mal de calculs mathématiques.
 
 ```{r}
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
+
+### Commentaires
+
+C'est la même chose que le code au-dessus mais pour les reverse.
 
 
 ```{r}
 plotErrors(errF, nominalQ=TRUE)
 ```
 
+### Commentaires
 
+On visualise le modèle d'erreur avec plotErrors() pour vérifier que les taux d'erreur estimés s'accordent bien avec les observations réelles.
 
-# Sample Inference
+Sur les graphes Les points représentent les taux d'erreur observés pour chaque score de qualité. La courbe noire montre les taux d'erreur estimés et la courbe rouge représente les taux d'erreur attendus selon la définition nominale du score Q.
+
+On peut voir que les taux d'erreur estimés correspondent bien aux taux observés et les taux d'erreur diminuent avec l'amélioration de la qualité, comme prévu.
+
+### Interprétation
+
+On observe bien que le taux d'erreur diminue fortement à mesure que le score de qualité augmente. Un score de qualité élevé correspond logiquement à une probabilité d'erreur quasi nulle.
+
+La ligne noire doit suivre fidèlement la tendance des points noirs observés. Si la courbe suit bien les points, cela signifie que le modèle d'erreur a correctement "compris" le profil du run de séquençage et qu'il sera fiable pour corriger les erreurs par la suite.
+
+# Inférence d'échantillon
 
 ```{r}
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 ```
+
+### Commentaires
+
 
 
 ```{r}
@@ -94,7 +245,7 @@ dadaFs[[1]]
 
 
 
-# Merge paired reads
+# Fusionner les lectures appariées
 
 ```{r}
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
@@ -104,7 +255,7 @@ head(mergers[[1]])
 
 
 
-# Construct sequence table
+# Construire une table de séquence
 
 ```{r}
 seqtab <- makeSequenceTable(mergers)
@@ -119,7 +270,7 @@ table(nchar(getSequences(seqtab)))
 
 
 
-# Remove chimeras
+# Supprimer les chimères
 
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
@@ -133,7 +284,7 @@ sum(seqtab.nochim)/sum(seqtab)
 
 
 
-# Track reads through the pipeline
+# Suivi des lectures
 
 ```{r}
 getN <- function(x) sum(getUniques(x))
@@ -146,7 +297,7 @@ head(track)
 
 
 
-# Assign taxonomy
+# Attribuer une taxonomie
 
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=FALSE)
@@ -166,7 +317,7 @@ head(taxa.print)
 
 
 
-# Evaluate accuracy
+# Évaluer la précision
 
 ```{r}
 unqs.mock <- seqtab.nochim["Mock",]
@@ -183,7 +334,27 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 
 
 
-# Bonus: Handoff to phyloseq
+# Phyloseq
+
+## Principe phyloseq
+
+Le package phyloseq est un outil conçu pour l'analyse, la manipulation et la visualisation de données de microbiome. Une fois les données structurées dans un objet phyloseq on peut les visualiser en générant des graphiques de diversité (alpha-diversité, bêta-diversité). On peut filter et agréger les données en regroupant les abondances par niveau taxonomique et on peut exporter les données en transférant les données vers d'autres packages statistiques.
+
+Les principes de son fonctionnement :
+
+Le principe fondamental de phyloseq est de centraliser toutes les données d'une étude de microbiome au sein d'un seul et même objet R cohérent. En écologie microbienne, les analyses croisent plusieurs types de données hétérogène. Phyloseq regroupe ces données dans une structure unifiée composée de plusieurs "tables".
+
+  - OTU table (ou ASV table) c'est une matrice d'abondance qui indique le nombre de fois que chaque variant (ASV ou OTU) a été observé dans chaque échantillon (lignes = taxons/ASV, colonnes = échantillons).
+  
+  - Taxonomy table (tax_table) c'est une table de classification taxonomique qui associe chaque ASV à son lignage (Règne, Phylum, Classe, Ordre, Famille, Genre, Espèce).
+  
+  - Sample data (sample_data) c'est les métadonnées associées aux échantillons, sous forme de tableau (lignes = échantillons, colonnes = variables).
+  
+  - Phylogenetic tree (phy_tree) c'est l'arbre phylogénétique qui relie les différents ASV entre eux sur le plan de l'évolution.
+  
+  - Reference sequences (refseq) : Les séquences ADN exactes (brins d'ADN) associées à chaque ASV.
+
+
 
 ```{r}
 install.packages("igraph", type = "source")
