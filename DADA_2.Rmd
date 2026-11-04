@@ -414,8 +414,15 @@ taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_to
 ```
 ### Commentaires
 
+*assignTaxonomy(...)* C'est la fonction de DADA2 qui sert à donner un nom (une identité biologique) à chacun de vos ASV.
+
+Le fichier de référence (silva_nr99_v138.2_toGenus_trainset.fa.gz) : C'est une immense base de données officielle (appelée SILVA) que l'on téléchargé sur le document import_data. Elle sert de dictionnaire : DADA2 compare l'ADN des ASV de l'article avec cette base pour identifier à quelle bactérie ils appartiennent.
 
 ### Interprétation
+
+*taxa* contient un grand tableau où chaque ligne correspond à un ASV, et les colonnes donnent sa classification du plus général au plus précis (Règne, Embranchement, Classe, Ordre, Famille, Genre).
+
+Cela sert à transformer les séquences d'ADN brutes en vrais noms de bactéries.
 
 ```{r}
 taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz")
@@ -423,18 +430,31 @@ taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz"
 
 ### Commentaires
 
+*addSpecies(...)* C'est une fonction de DADA2 qui vient compléter le tableau de classification.
+
+Le fichier silva_v138.2_assignSpecies.fa.gz : C'est le dictionnaire d'espèces que l'on téléchargé sur le document import_data. La fonction s'en sert pour comparer les ASV de l'article avec des séquences de référence connues à 100 %.
 
 ### Interprétation
+
+Le tableau de taxonomie (taxa) est enrichi. Jusqu'à présent, les bactéries étaient identifiées jusqu'au genre mais maintenant cette étape essaie d'aller encore plus loin en précisant l'espèce exacte lorsque c'est possible grâce à une correspondance parfaite.
+
+
 ```{r}
-taxa.print <- taxa # Removing sequence rownames for display only
+taxa.print <- taxa 
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
 ### Commentaires
 
+*taxa.print <- taxa* Permet de faire une copie exacte du tableau de taxonomie dans une nouvelle variable, pour ne pas modifier le tableau original.
+
+*rownames(taxa.print) <- NULL* Permet de supprimer les noms des lignes (qui correspondent aux longues séquences d'ADN des ASV). Cela évite d'avoir un affichage illisible et encombré dans la console.
+
+*head(taxa.print)* Permet d'afficher les premières lignes de ce tableau nettoyé.
 
 ### Interprétation
 
+C'est une astuce d'affichage pour voir proprement à quoi ressemblent la classifications.
 
 # Évaluer la précision
 
@@ -445,8 +465,15 @@ cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock c
 ```
 ### Commentaires
 
+*seqtab.nochim["Mock",]* Permrt d'isoler l'échantillon appelé "Mock". C'est un échantillon témoin positif (un mélange de bactéries dont on connaît exactement la composition au départ).
+
+*sort(..., decreasing=TRUE)* Permet de ne garder que les ASV présents dans ce témoin (compte > 0) et les trie du plus abondant au moins abondant.
+
+*cat(...)* Permet d'afficher un message dans la console indiquant le nombre total d'ASV uniques que DADA2 a trouvés dans ce témoin.
 
 ### Interprétation
+
+C'est un contrôle qualité. Vu que l'on connaissez la composition exacte de la communauté Mock, ce test permet de vérifier si DADA2 a vu juste. On chercher a savoir si le nombre d'ASV affiché est très proche du nombre réel de bactéries contenues dans le témoin, cela prouve que le pipeline est très précis et qu'il ne crée pas de faux variants
 
 ```{r}
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
@@ -455,9 +482,15 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 ```
 ### Commentaires
 
+*mock.ref <- ...* Cela permet de charger le fichier de référence officiel (HMP_MOCK.v35.fasta) qui contient les vraies séquences ADN du témoin (la communauté Mock que l'on est censé trouver).
+
+*match.ref <- ...* Cela permet de comparer les ASV trouvés dans l'échantillon témoin (Mock) avec cette liste officielle pour voir s'ils correspondent parfaitement.
+
+*cat(...)* Affiche le nombre de séquences qui correspondent exactement à la réalité attendue.
 
 ### Interprétation
 
+Si le chiffre affiché est égal (ou très proche) du nombre total d'ASV de votre témoin, cela prouve que votre analyse fonctionne à la perfection. On n'a pratiquement aucune erreur, et les bactéries identifiées sont bonnes. Ici on voie bien que le chiffre affiché est égale (20).
 
 # Phyloseq
 
@@ -480,31 +513,26 @@ Le principe fondamental de phyloseq est de centraliser toutes les données d'une
   - Reference sequences (refseq) : Les séquences ADN exactes (brins d'ADN) associées à chaque ASV.
 
 
-
+### Instalation phyloseq
 ```{r}
 install.packages("igraph", type = "source")
 BiocManager::install("phyloseq", update = FALSE)
 library(phyloseq); packageVersion("phyloseq")
 ```
 
-
 ```{r}
 library(Biostrings); packageVersion("Biostrings")
 ```
-
 
 ```{r}
 library(ggplot2); packageVersion("ggplot2")
 ```
 
-
 ```{r}
 theme_set(theme_bw())
 ```
-### Commentaires
 
 
-### Interprétation
 
 ```{r}
 samples.out <- rownames(seqtab.nochim)
