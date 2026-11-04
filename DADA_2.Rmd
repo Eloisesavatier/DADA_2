@@ -332,8 +332,6 @@ Mais si on avais observé des longueurs de séquences aberrantes (beaucoup plus 
 
 # Supprimer les chimères
 
-
-
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
@@ -409,7 +407,7 @@ Le tableau permet de suivre chaque échantillon un par un et de vérifier qu'il 
 
 # Attribuer une taxonomie
 
-```{r}
+```{r, cache=TRUE}
 taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=FALSE)
 ```
 ### Commentaires
@@ -424,7 +422,7 @@ Le fichier de référence (silva_nr99_v138.2_toGenus_trainset.fa.gz) : C'est une
 
 Cela sert à transformer les séquences d'ADN brutes en vrais noms de bactéries.
 
-```{r}
+```{r, cache=TRUE}
 taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz")
 ```
 
@@ -554,7 +552,7 @@ rownames(samdf) <- samples.out
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
                sample_data(samdf),
                tax_table(taxa))
-ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+ps <- prune_samples(sample_names(ps) != "Mock", ps) 
 ```
 ### Commentaires
 
