@@ -197,6 +197,7 @@ errF <- learnErrors(filtFs, multithread=TRUE)
 
 *multithread = TRUE* Permet d'activer le calcul en parallèle sur plusieurs cœurs du processeur pour accélérer cette étape qui demande pas mal de calculs mathématiques.
 
+
 ```{r}
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
@@ -232,89 +233,207 @@ dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 
 ### Commentaires
 
+Cette ligne est l'étape d'inférence des variants de séquence (dénoisage) pour les lectures forward.
 
+*dada()* C'est la fonction principale de l'algorithme DADA2. Contrairement aux méthodes traditionnelles qui regroupent les séquences par similarité, cette fonction utilise le modèle statistique d'erreurs pour identifier les véritables séquences biologiques exactes, appelées ASV (Amplicon Sequence Variants).
+
+*err = errF* on met ici le modèle d'erreur *(errF)* que l'on vient de calculer avec *learnErrors()*. C'est grâce à cette matrice de taux d'erreur que l'algorithme sait statistiquement si une variation entre deux séquences est due à une erreur de la machine ou à une réelle mutation biologique.
+
+Ici, l'algorithme analyse l'abondance des séquences et leurs scores de qualité. Il sépare les séquences en fonction de leur probabilité d'avoir été générées par erreur à partir d'une séquence parente plus abondante. Il est capable de distinguer deux séquences qui ne diffèrent que d'un seul nucléotide.
 
 ```{r}
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 ```
+### Commentaires
 
+C'est la même chose que le code précédent mais pour les reverse.
 
 ```{r}
 dadaFs[[1]]
 ```
 
+### Commentaires
 
+Cette commande permet d'extraire et d'afficher les résultats détaillés de l'inférence des variants (le débruitage) pour le premier échantillon de votre jeu de données.
+
+DADA2 a identifié 128 variants de séquence réels parmi les 1979 séquences uniques du premier échantillon. 
 
 # Fusionner les lectures appariées
 
 ```{r}
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
-# Inspect the merger data.frame from the first sample
+# Examiner le data.frame issu de la fusion à partir du premier échantillon
 head(mergers[[1]])
 ```
+### Commentaires
 
+Ici ce code permet l'assemblage des lectures directes et inverses pour obtenir les séquences complètes débruitées, suivi de l'affichage des premières lignes du résultat pour le premier échantillon. Cet assemblage est permis en alignant les lectures directes débruitées avec le complément inverse des lectures inverses débruitées qui convient. Puis cela permet de reconstruire la séquence complète, appelée contig.
 
+*mergePairs()* c'est la fonction qui permet de fusionner les lectures forward  et les lectures reverse de chaque fragment d'ADN.
+
+*dadaFs*, *filtFs*, *dadaRs*, *filtRs* Permet de fournir à la fonction les résultats de débruitage ainsi que les chemins des fichiers filtrés correspondants. DADA2 a besoin des lectures filtrées d'origine pour aligner les séquences qui se chevauchent.
+
+Par défaut, la fusion des lectures n'est validée que si les séquences avant et arrière partagent une zone de chevauchement d'au moins 12 bases parfaitement identiques.
+
+*verbose = TRUE* : Permet d'afficher un rapport textuel dans la console indiquant combien de lectures ont pu être fusionnées avec succès pour chaque échantillon.
+
+*head(mergers[[1]])* : Permet de visualiser les 6 premières lignes du tableau de fusion pour le premier échantillon.
 
 # Construire une table de séquence
+
+Maintement, il faut construire un tableau de variantes de séquences d'amplicons.
 
 ```{r}
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 ```
 
+la construction officielle de la table des ASV et la vérification de ses dimensions
+
+### Commentaires
+
+*seqtab <- makeSequenceTable(mergers)*
+  - *makeSequenceTable()* C'est une fonction qui rassemble les lectures fusionnées de tous vos échantillons dans un unique tableau global (une matrice).
+  
+*dim(seqtab)* Cela permet d'afficher les dimension du tableau sous la forme de [nombre_de_ligne, nombre_de_colonnes].
+
+### Interprétation
+
+Le résultat 20 293 correspond : 
+  - Les 20 lignes sont les 20 échantillons qui ont été traités avec succès et ont tous conservé des données valides jusqu'à cette étape. Aucun échantillon n'a été perdu en route.
+  - Les 293 sont les 293 variants de séquences uniques (ASV) au total dans l'ensemble du groupe.
 
 ```{r}
-# Inspect distribution of sequence lengths
+# Examiner la répartition des longueurs des séquences
 table(nchar(getSequences(seqtab)))
 ```
 
+### Commentaires
 
+*getSequences(seqtab)* Permet d'extraire la séquence d'ADN de chaque colonne de la table d'ASV.
+
+*nchar(...)* Permet de calculer le nombre de caractères (la longueur exacte en paires de bases) de chaque séquence d'ADN.
+
+*table(...)* Permet de créer un tableau de fréquences pour compter combien d'ASV ont telle ou telle longueur.
+
+### Interprétation
+
+Le tableau :
+  - La première ligne c'est la longueur de la séquence en paires de bases.
+  - La deuxième ligne c'est le nombre d'ASV (la quantité de variants uniques qui ont cette longueur exacte).
+
+Lorsque l'on exécute cette ligne de code on affiche une liste de longueurs d'ADN associées à un nombre d'ASV.
+
+Les résultats de ce tableau sont cohérent car pour un ciblage précis de la région V4 de l'ARN 16S (comme l'indique l'article de Kozich et al. avec des lectures chevauchantes), la grande majorité des ASV doit se concentrer sur une longueur bien précise et constante (généralement autour de 250 à 254 nucléotides).
+
+La quasi-totalité des ASV ont presque la même longueur attendue, cela motre que l'amplification et l'assemblage ont fonctionné de manière très propre. 
+
+Mais si on avais observé des longueurs de séquences aberrantes (beaucoup plus courtes ou beaucoup plus longues), cela aurai pu nous indiquer des produits d'amplification non spécifiques, des amorces mal coupées ou des artefacts.
 
 # Supprimer les chimères
+
+
 
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
 ```
 
+### Commentaires
+
+*removeBimeraDenovo()* c'est un fonction conçue pour détecter et éliminer les séquences chimériques (bimeras). 
+
+*method = "consensus"* Permet d'indiquer à l'algorithme comment identifier les chimères. La méthode par consensus examine chaque échantillon individuellement, puis applique un critère global pour décider si une séquence est chimérique ou non.
+
+*verbose = TRUE*  Permet d'afficher un rapport textuel dans la console indiquant le pourcentage et le nombre exact de séquences chimériques détectées et supprimées.
+
+*dim(seqtab.nochim)* Permet de vérifier les dimensions du nouveau tableau après nettoyage.
+
+### Interprétation
+
+Qu'est-ce qu'une chimère ? 
+Pendant la PCR, il arrive qu'un brin d'ADN s'arrête prématurément, puis vienne se relancer sur une autre matrice d'ADN au cycle suivant. Cela crée un faux "hybride" (une chimère) entre deux bactéries différentes. Si on ne les supprime pas, ces artefacts faussent complètement la diversité biologique.
+
+Les 20 lignes (les échantillons) ne bougent pas.
+Le nombre d'échantillons reste identique. Aucun échantillon n'a été supprimé, ils ont tous survécu au nettoyage.
+
+Les colonnes diminuent (les faux variants sont éliminés). Le nombre de colonnes passe de 293 à 232 un nombre plus petit.
+
+Les colonnes diminuent parce que la différence (par exemple, les ~43 colonnes en moins) correspond aux chimères. Des erreurs de PCR (des bouts d'ADN collés par erreur ensemble) que l'algorithme a repérées et jetées à la poubelle.
+
 
 ```{r}
 sum(seqtab.nochim)/sum(seqtab)
 ```
 
+### Commentaires
+
+Ce calcul divise le nombre total de lectures (reads) après la suppression des chimères par le nombre total de lectures avant cette étape. 
+
+### Interprétation
+
+Le résultat es 0,964 soit 96,4. On a donc conservé 96,4 % des lectures de départ. Seules 3,6 % des lectures ont été identifiées comme des chimères et éliminées.
+
+Conserver plus de 90 à 95 % des lectures après la suppression des chimères est le signe d'une amplification PCR propre et d'une très bonne qualité générale des données de séquençage.
+
+En fonction d'un jeu de données à l'autre, la féquence des séquences chimérique varie beaucoup et dépend de facteurs tels que les procédures expérimentales et la complexité de l'échantillon.
+
+Dans l'étude de l'article utiliser par ce tuto, les chimère représentent environ 21% des variant de séquences fusionnés, mais en tenant compte de leur abondance, elles ne représentent plus qu'environ 4 % des lectures de séquences fusionnées.
 
 
 # Suivi des lectures
 
+Maintenant, on va regarder le nombre de lectures qui ont franchi chaque étape du processus :
+
 ```{r}
 getN <- function(x) sum(getUniques(x))
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
-# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
 head(track)
 ```
+### Commentaires
 
+*getN <- function(...)* Permet de créer un petit outil pour compter facilement le nombre de séquences restantes.
 
+*track <- cbind(...)* Permet de rassembler dans un seul et même tableau toutes les étapes clés (le départ, le filtrage, la correction, l'assemblage et le nettoyage final).
+
+*colnames / rownames* Permet de donner des noms clairs aux colonnes et aux lignes (les noms de vos échantillons).
+
+*head(track)* Permet d'afficher les premières lignes de ce tableau récapitulatif.
+
+### Interprétation
+
+Le tableau permet de suivre chaque échantillon un par un et de vérifier qu'il ne perd pas trop de séquences en cours de route. Il faut surveiller si un échantillon se retrouve avec un nombre de séquences anormalement bas (ou zéro) à la fin, cela signifie qu'il a un problème de qualité et qu'il faudra peut-être l'écarter de la suite de l'étude.
 
 # Attribuer une taxonomie
 
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=FALSE)
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz")
 ```
 
+### Commentaires
 
+
+### Interprétation
 ```{r}
 taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
+### Commentaires
 
+
+### Interprétation
 
 
 # Évaluer la précision
@@ -324,14 +443,20 @@ unqs.mock <- seqtab.nochim["Mock",]
 unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
 cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
 match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
 cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
 ```
+### Commentaires
 
+
+### Interprétation
 
 
 # Phyloseq
@@ -376,7 +501,10 @@ library(ggplot2); packageVersion("ggplot2")
 ```{r}
 theme_set(theme_bw())
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 samples.out <- rownames(seqtab.nochim)
@@ -389,7 +517,10 @@ samdf$When <- "Early"
 samdf$When[samdf$Day>100] <- "Late"
 rownames(samdf) <- samples.out
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
@@ -397,7 +528,10 @@ ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
                tax_table(taxa))
 ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
@@ -406,24 +540,36 @@ ps <- merge_phyloseq(ps, dna)
 taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
 ps
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 # Transform data to proportions as appropriate for Bray-Curtis distances
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
+### Commentaires
 
+
+### Interprétation
 
 ```{r}
 top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
@@ -431,3 +577,9 @@ ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
 ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
+
+
+### Commentaires
+
+
+### Interprétation

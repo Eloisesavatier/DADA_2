@@ -4,7 +4,7 @@ output: github_document
 ---
 # Téléchargement des données fastq de l'article de Kozich et al. 
 
-```{bash}
+```{bash, cache=TRUE}
 wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
 unzip miseqsopdata.zip
 ```
@@ -18,11 +18,19 @@ Cette commande en bash permet de télécharger directement les données d'exempl
 *unzip* permet d'extraire cette archive pour créer le répertoire de travail.
 
 
-```{bash}
+```{bash, cache=TRUE}
 wget https://zenodo.org/records/14169026/files/silva_nr99_v138.2_toGenus_trainset.fa.gz
 ```
 
-
-```{bash}
+```{bash, cache=TRUE}
 wget https://zenodo.org/records/14169026/files/silva_v138.2_assignSpecies.fa.gz
 ```
+
+*wget* C'est une commande pour télécharger des fichiers directement depuis Internet en ligne de commande.
+
+Ici, on téléchargez deux dictionnaires de référence officiels (la base de données SILVA) qui vont servir à identifier vos bactéries.
+
+*silva_nr99_v138.2_toGenus_trainset.fa.gz* : C'est la base de données principale que l'on utilise pour classer les ASV du règne jusqu'au genre.
+
+*silva_v138.2_assignSpecies.fa.gz* :
+C'est un dictionnaire complémentaire. Il sert à aller encore plus loin et identifier l'espèce exacte de certaines bactéries, grâce à une correspondance de séquence à 100 %.
