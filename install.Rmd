@@ -3,7 +3,7 @@ title: "R Notebook"
 output: github_document
 ---
 
-# Installation de bioconductor et de dada2
+# Installation de BiocManager, DADA2 et DECIPHER
 
 ```{r}
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -18,10 +18,19 @@ if (!requireNamespace("BiocManager", quietly=TRUE))
 BiocManager::install("DECIPHER")
 ```
 
+BiocManager : C'est le gestionnaire de paquets spécialisé pour les logiciels de bioinformatique et de biologie moléculaire (Bioconductor).
 
-# Installation de phyloseq
+DADA2 : C'est un package pour analyser vos séquences.
+
+DECIPHER : C'est un package pour manipuler des séquences d'ADN et affiner la classification taxonomique.
+
+# Installation de igraph et phyloseq
 
 ```{r}
 install.packages("igraph", type = "source")
 BiocManager::install("phyloseq", update = FALSE)
 ```
+
+igraph : C'est un package qui sert à analyser et dessiner des réseaux. Par exemple ce package est utile pour étudier les interactions entre différentes espèces de bactéries.
+
+phyloseq : C'est un package important en écologie microbienne.

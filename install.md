@@ -1,7 +1,7 @@
 R Notebook
 ================
 
-# Installation de bioconductor et de dada2
+# Installation de BiocManager, DADA2 et DECIPHER
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -25,10 +25,6 @@ BiocManager::install("dada2", version = "3.23")
     ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, mgcv, nlme,
     ##     nnet, spatial, survival
 
-    ## Old packages: 'arrow', 'curl', 'duckdb', 'gargle', 'gert', 'googledrive',
-    ##   'googlesheets4', 'lambda.r', 'openssl', 'RcppArmadillo', 'readxl',
-    ##   'roxygen2', 'sp', 'xfun'
-
 ``` r
 if (!requireNamespace("BiocManager", quietly=TRUE))
     install.packages("BiocManager")
@@ -51,11 +47,15 @@ BiocManager::install("DECIPHER")
     ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, mgcv, nlme,
     ##     nnet, spatial, survival
 
-    ## Old packages: 'arrow', 'curl', 'duckdb', 'gargle', 'gert', 'googledrive',
-    ##   'googlesheets4', 'lambda.r', 'openssl', 'RcppArmadillo', 'readxl',
-    ##   'roxygen2', 'sp', 'xfun'
+BiocManager : C’est le gestionnaire de paquets spécialisé pour les
+logiciels de bioinformatique et de biologie moléculaire (Bioconductor).
 
-# Installation de phyloseq
+DADA2 : C’est un package pour analyser vos séquences.
+
+DECIPHER : C’est un package pour manipuler des séquences d’ADN et
+affiner la classification taxonomique.
+
+# Installation de igraph et phyloseq
 
 ``` r
 install.packages("igraph", type = "source")
@@ -77,3 +77,9 @@ BiocManager::install("phyloseq", update = FALSE)
 
     ## Warning: package(s) not installed when version(s) same as or greater than current; use
     ##   `force = TRUE` to re-install: 'phyloseq'
+
+igraph : C’est un package qui sert à analyser et dessiner des réseaux.
+Par exemple ce package est utile pour étudier les interactions entre
+différentes espèces de bactéries.
+
+phyloseq : C’est un package important en écologie microbienne.

@@ -4,7 +4,7 @@ output: github_document
 ---
 # Téléchargement des données fastq de l'article de Kozich et al. 
 
-```{bash, cache=TRUE}
+```{bash}
 wget https://mothur.s3.us-east-2.amazonaws.com/wiki/miseqsopdata.zip
 unzip miseqsopdata.zip
 ```
@@ -18,11 +18,11 @@ Cette commande en bash permet de télécharger directement les données d'exempl
 *unzip* permet d'extraire cette archive pour créer le répertoire de travail.
 
 
-```{bash, cache=TRUE}
+```{bash}
 wget https://zenodo.org/records/14169026/files/silva_nr99_v138.2_toGenus_trainset.fa.gz
 ```
 
-```{bash, cache=TRUE}
+```{bash}
 wget https://zenodo.org/records/14169026/files/silva_v138.2_assignSpecies.fa.gz
 ```
 
