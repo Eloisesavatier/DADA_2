@@ -409,7 +409,7 @@ Mais ici on peut voir que nous avons conservé la majorité de nos données brut
 
 # Attribuer une taxonomie
 
-```{r, cache=TRUE}
+```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
 ```
 ### Commentaires
