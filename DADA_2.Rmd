@@ -405,10 +405,12 @@ head(track)
 
 Le tableau permet de suivre chaque échantillon un par un et de vérifier qu'il ne perd pas trop de séquences en cours de route. Il faut surveiller si un échantillon se retrouve avec un nombre de séquences anormalement bas (ou zéro) à la fin, cela signifie qu'il a un problème de qualité et qu'il faudra peut-être l'écarter de la suite de l'étude.
 
+Mais ici on peut voir que nous avons conservé la majorité de nos données brutes, et il n'y a pas de baisse excessive associée à une étape particulière.
+
 # Attribuer une taxonomie
 
 ```{r, cache=TRUE}
-taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=FALSE)
+taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
 ```
 ### Commentaires
 
@@ -452,7 +454,9 @@ head(taxa.print)
 
 ### Interprétation
 
-C'est une astuce d'affichage pour voir proprement à quoi ressemblent la classifications.
+Ce code permet de voir proprement à quoi ressemblent la classifications.
+
+Ici on voit que les *Bacteroidota* sont bien représentés parmi les taxons les plus abondants dans ces échantillons fécaux. Mais malheureusement peu d'espèces ont pu être identifiées, car il est souvent impossible d'établir une identification précise à partir de juste V4 du gène 16S, et aussi parce que les bases de données de référence couvrent peu le microbiote intestinal de la souris.
 
 # Évaluer la précision
 
@@ -488,7 +492,9 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 
 ### Interprétation
 
-Si le chiffre affiché est égal (ou très proche) du nombre total d'ASV de votre témoin, cela prouve que votre analyse fonctionne à la perfection. On n'a pratiquement aucune erreur, et les bactéries identifiées sont bonnes. Ici on voie bien que le chiffre affiché est égale (20).
+Si le chiffre affiché est égal (ou très proche) du nombre total d'ASV de votre témoin, cela prouve que l'analyse fonctionne à la perfection. On n'a pratiquement aucune erreur, et les bactéries identifiées sont bonnes. Ici on voie bien que le chiffre affiché est égale (20).
+
+Cela veut dire que la communauté simulée contenait 20 souches bactériennes et DADA2 a lui identifié 20 ASV correspondant exactement aux génomes de référence des membres attendus de la communauté. Le pourcentage d'erreurs qui subsiste dans les données après traitement par DADA2 pour cet échantillon est de 0 %.
 
 # Phyloseq
 
@@ -511,10 +517,11 @@ Le principe fondamental de phyloseq est de centraliser toutes les données d'une
   - Reference sequences (refseq) : Les séquences ADN exactes (brins d'ADN) associées à chaque ASV.
 
 
-### Instalation phyloseq
+### Instalation igraph, phyloseq, Biostring et ggplot2
 ```{r}
 install.packages("igraph", type = "source")
 BiocManager::install("phyloseq", update = FALSE)
+
 library(phyloseq); packageVersion("phyloseq")
 ```
 
@@ -522,15 +529,25 @@ library(phyloseq); packageVersion("phyloseq")
 library(Biostrings); packageVersion("Biostrings")
 ```
 
+Biostrings : C'est un package qui permet de manipuler des séquences biologiques (chaînes d'ADN, d'ARN ou de protéines).
+
 ```{r}
 library(ggplot2); packageVersion("ggplot2")
 ```
+
+ggplot2 : C'est une bibliothèque pour créer des graphiques.
 
 ```{r}
 theme_set(theme_bw())
 ```
 
+### Commentaires
 
+*theme_set(...)* C'est une fonction de la bibliothèque graphique ggplot2 qui permet de définir un style visuel par défaut pour tous les graphiques.
+
+*theme_bw()* C'est le style choisi, qui signifie "Black and White". Il applique un fond blanc épuré, des axes noirs bien nets et une grille grise discrète.
+
+Cette commande change l'esthétique des graphiques pour donner un aspect propre et facile à lire.
 
 ```{r}
 samples.out <- rownames(seqtab.nochim)
@@ -543,10 +560,21 @@ samdf$When <- "Early"
 samdf$When[samdf$Day>100] <- "Late"
 rownames(samdf) <- samples.out
 ```
+
 ### Commentaires
 
+Ce bloc de code sert à créer un tableau de métadonnées en extrayant des informations directement à partir de leurs noms.
 
-### Interprétation
+*rownames(seqtab.nochim)* Permet de récupèrer la liste des noms des 20 échantillons.
+
+*strsplit et substr* Permet de découper les noms pour en extraire des informations cachées (par exemple, le jour du prélèvement).
+
+*samdf <- data.frame(...)* Permet de rassembler toutes ces informations dans un tableau de données avec trois colonnes : Subject, Gender, et Day.
+
+*samdf$When <- ...* Permet de créer une nouvelle colonne qui classe les prélèvements en deux catégories : "Early" (les premiers jours) ou "Late" (après 100 jours).
+
+Ce code nous permet de faire un tableau de métadonnées qui nous permet après de faire de statistiques et des graphiques.
+
 
 ```{r}
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
@@ -556,8 +584,20 @@ ps <- prune_samples(sample_names(ps) != "Mock", ps)
 ```
 ### Commentaires
 
+*phyloseq(...)* C'est un fonction qui assemble et fusionne les trois éléments en un objet unique et structuré ( on le nomme *ps*).
 
-### Interprétation
+Les trois éléments sont :
+  - Le tableau des abondances d'ADN (*seqtab.nochim*).
+  - La carte d'identité des échantillons (*samdf*).
+  - Le dictionnaire des noms de bactéries (*taxa*).
+  
+*prune_samples(sample_names(ps) != "Mock", ps)* Permet de retirer l'échantillon "Mock" de cet objet final.
+
+Ce code permet de créer la base de données centrale et officielle (l'objet phyloseq) qui va nous suivre pour toutes les analyses statistiques et graphiques à venir.
+
+On retire le Mock car il a déjà rempli son rôle de contrôle qualité (pour vérifier que vos séquences étaient exactes), mais il ne fait pas partie des vrais sujets de votre étude. On le jette de cet objet final pour qu'il ne fausse pas les calculs de diversité et les comparaisons entre vos 20 échantillons.
+
+
 
 ```{r}
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
@@ -568,34 +608,113 @@ ps
 ```
 ### Commentaires
 
+*Biostrings::DNAStringSet(taxa_names(ps))* Permet de récupèrer les longues séquences d'ADN qui servaient de noms aux bactéries.
+
+*merge_phyloseq(ps, dna)* Permet d'intègrer ces séquences d'ADN directement à l'intérieur de l'objet phyloseq pour qu'elles y restent rangées.
+
+*taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))* Permet de remplacer les suites de lettres d'ADN par des noms courts et propres : ASV1, ASV2, ASV3... jusqu'à ASV232.
 
 ### Interprétation
+
+Ce code permet de remplacer les séquences d'ADN complète par des noms courts pour les ASV. C'est plus pratique d'avoir des noms courts pour travailler avec des tableux et des visualisation de phyloseq. Par contre, on conserve quand même les séquences d'ADN complètes. Les séquences d'ADN des ASV sont stockées dans *refseq* de l'objet phyloseq et peuvent être récupérées grâce à refseq(ps). Les taxons sont également renommés par des nom courts et c'est ces nom couts des taxons qui apparaîtront dans les tableux et les graphiques.
+
+Le résumé affiché confirme que l'objet phyloseq (ps) est complet et prêt pour les analyses.
+  - *otu_table() [ 232 taxa and 19 samples ]* : Il reste 232 variantes bactériennes (ASV) réparties sur 19 échantillons (20 échantillons de départ, moins le témoin "Mock" qu'on a retiré).
+  - *sample_data() [ 19 samples by 4 sample variables ]* : Les 19 échantillons ont bien leur carte d'identité à 4 critères (Sujet, Sexe, Jour, Période Early/Late).
+  - *tax_table() [ 232 taxa by 7 taxonomic ranks ]* : Chacun des 232 ASV possède sa classification complète.
+  - *refseq() [ 232 reference sequences ]* : Les vraies séquences d'ADN sont bien enregistrées en arrière-plan, associées à leurs noms propres (ASV1, etc.).
+  
+Donc les données sont nettoyées, renommées et structurées. On peut passer aux graphiques et aux statistiques de diversité.
+
+
+## Visualiser l'alpha-diversité :
 
 ```{r}
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
 ### Commentaires
 
+*plot_richness(...)* C'est une fonction du package phyloseq conçue pour calculer et afficher la diversité alpha (la richesse et l'équitabilité des espèces à l'intérieur de chaque échantillon).
+
+*x="Day"* Permet de placer le temps (en jours) sur l'axe horizontal.
+
+*measures=c("Shannon", "Simpson")* Permet de calculer et d'afficher avec deux indices écologiques :
+  - *Shannon* Permet de prendre en compte à la fois le nombre d'espèces et leur répartition (sensible aux espèces rares).
+  - *Simpson* Permet de mettre davantage l'accent sur les espèces dominantes.
+  
+*color="When"* Permet d'associer une couleur aux points en fonction de la période (Early en orange ou Late en bleu) définie dans les métadonnées.
 
 ### Interprétation
 
+En analysant chacun des graphiques individuellement, on peut observer que : 
+
+  - Les deux graphiques mettent en évidence deux groupes de prélèvements distincts sur l'axe un groupe au tout début de l'étude (jours 0 à 10, classés Early en orange) et un second groupe beaucoup plus tardif (autour des jours 140 à 150, classés Late en bleu).
+  
+  - Pour le graphique sur l'indice de Shannon on voit :
+    - Des valeurs oscillent globalement entre 3.0 et 4.0.
+    - On observe une variabilité un peu plus prononcée chez les sujets au début (Early), avec quelques échantillons atteignant des scores élevés (proches de 4.0), traduisant une diversité microbiote riche au démarrage.
+  
+  - Pour le graphique sur l'indice de Simpson on voit :
+    - Des valeurs élevées et resserrées (généralement au-dessus de 0.92) pour l'ensemble des échantillons.
+    - Cela indique une forte régularité au sein des communautés bactériennes. Il n'y a pas une seule espèce ultra-dominante qui écrase toutes les autres, quelle que soit la période.
+
+Maintenant on peut analyser les deux graphiques en même temps. Si on observe l'axe vertical (des scores des indices de Shannon et Simpson), on voit :
+  - Un chevauchement des groupes. Les points orange et les points bleu couvrent globalement la même plage de valeurs.
+  - Il y a aussi une absence de tendance tranchée. Il n'y a pas de groupe qui se détache nettement en haut ou en bas du graphique. Les niveaux globaux de diversité restent comparables entre le début et la fin.
+  
+### Conclusion :
+
+On voit une stabilité de la diversité alpha. Cela indique que la richesse interne des échantillons et la répartition des espèces (l'équitabilité) ne s'effondrent pas et n'explosent pas globalement entre les deux périodes. Il y a aucune différence évidente dans la diversité alpha entre les échantillons précoces et tardifs. Avoir une diversité alpha similaire ne veut pas dire que les échantillons contiennent les mêmes bactéries. Deux communautés peuvent avoir exactement le même score de Shannon tout en étant composées d'espèces totalement différentes. Et pour savoir si les échantillons contiennent les mêmes bactéries il faut faire la diversité bêta. 
+
+C'est pour cette raison qu'en écologie microbienne, on ne s'arrête pas à la diversité alpha. Il faut aussi regarder la diversité bêta (via des analyses d'ordination comme les distances de Bray-Curtis) pour voir si, malgré une diversité interne stable, la composition des espèces a totalement changé au cours du temps.
+
+## Analyses d'ordination
+
 ```{r}
-# Transform data to proportions as appropriate for Bray-Curtis distances
+# Convertir les données en proportions adaptées aux distances de Bray-Curtis
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
 ### Commentaires
 
+*transform_sample_counts(ps, function(otu) otu/sum(otu))* Permet de convertir les comptes bruts de séquences en abondances relatives (proportions), ce qui permet de normaliser les échantillons pour qu'ils soient comparables, indépendamment de leur profondeur de séquençage totale.
+
+*ordinate(..., method="NMDS", distance="bray")* Permet de lancer une ordination par NMDS (Non-metric Multidimensional Scaling) basée sur la distance de Bray-Curtis. Cet outil permet de calculer les différences de composition microbienne (diversité bêta) entre tous vos échantillons pour pouvoir les projeter sur un graphique en 2 dimensions.
 
 ### Interprétation
+
+Le paramètre à regarder dans le resultat est le stress. Le meilleur score de stress affiché est d'environ 0,0804 (run 0 mais aussi dans d'autre). Pour interpréter un stress en NMDS il faut savoir que :
+  - < 0.05 : Excellent
+  - < 0.10 : Très bon (fiable, c'est le cas ici)
+  - < 0.20 : Correct / acceptable
+  - > 0.20 : À interpréter avec prudence (mauvaise représentation en 2D).
+
+Ici les valeurs de stress (autour de 0,08 à 0,13) est bien. Cela signifie que l'algorithme a réussi à compresser les données multidimensionnelles dans un espace à 2 dimensions sans trop de distorsion. Le graphique d'ordination d'après sera fiable et robuste pour analyser les regroupements de vos échantillons.
+
+## Visualiser la bêta-diversité :
 
 ```{r}
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
 ### Commentaires
 
+*plot_ordination(...)* C'est la fonction de phyloseq qui prend les résultats du calcul d'ordination (le NMDS juste avant) et les transforme en un graphique visuel en 2 dimensions.
+
+*color="When"* Permet de colorer chaque point selon sa période (Early en orange, Late en bleu) pour voir visuellement si les échantillons se regroupent par similarité de composition.   
 
 ### Interprétation
+
+Le graphique montre que l'ordination met en évidence une nette séparation entre les échantillons Late et Early.
+
+On peut voir une césure horizontale. Tous les échantillons de la période Early (en orange) se regroupent strictement sur la partie droite du graphique. Tous les échantillons de la période Late (en bleu) se regroupent de l'autre côté, sur la partie gauche. Il y a une absence de chevauchement. Il y a un espace vide net entre les deux groupes (à l'exception d'un point orange isolé vers le bas qui représente une particularité individuelle). Les microbiotes des deux périodes ne se ressemblent pas du tout sur le plan de la composition.
+
+### Conclusion :
+
+En combinant ce graphique avec celui de la diversité alpha vu juste avant, on peut dire que :
+  - La diversité alpha (richesse interne) était stable. Les sujets hébergeaient globalement le même nombre d'espèces et le même équilibre au début et à la fin de l'étude.
+  - La diversité bêta (composition des espèces) a totalement changé. Grâce au NMDS, on voit que la nature de ces espèces a complètement changé. Les bactéries présentes au jour 0 ont été supplantées ou ont évolué pour laisser place à un cortège bactérien complètement différent au jour 150, tout en conservant un niveau de diversité globale similaire.
+
+## Diagramme à barres
 
 ```{r}
 top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
@@ -603,9 +722,26 @@ ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
 ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
-
-
 ### Commentaires
 
+*top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]* Permet de trier tous les ASV du plus abondant au moins abondant, puis de sélectionner les 20 plus importants de l'ensemble du jeu de données.
+
+*ps.top20 <- transform_sample_counts(...)* Permet de convertir les comptes bruts en proportions (abondances relatives) pour que les échantillons soient comparables.
+
+*ps.top20 <- prune_taxa(top20, ps.top20)* Permet de filtrer l'objet pour ne garder que ces 20 ASV phares.
+
+*plot_bar(..., fill="Family") + facet_wrap(~When, scales="free_x")* Permet de créer un diagramme en barres empilées coloré par famille bactérienne, en séparant visuellement les échantillons de la période Early de ceux de la période Late.
 
 ### Interprétation
+
+Ce diagramme ne montre que rien ne ressort vraiment de la distribution taxonomique des 20 premières séquences pour expliquer la différenciation précoce-tardive.
+
+Il y a une grande similarité visuelle. Si l'on compare les barres de la période Early et celles de la période Late, on constate qu'elles sont dominées par les mêmes blocs de couleurs, en particulier la grande bande bleue représentant la famille des *Muribaculaceae*, ainsi que les *Bacteroidaceae* (en rouge) ou les *Rikenellaceae* (en violet).
+
+Il y a une contradiction avec le NMDS. Bien que l'analyse d'ordination précédente (le NMDS) ait prouvé que les échantillons des deux périodes formaient deux groupes distincts, ce diagramme des 20 taxons les plus abondants ne montre pas de rupture visuelle massive.
+
+La distinction entre le début et la fin de l'étude ne vient pas d'un bouleversement total des grandes familles dominantes (qui restent globalement les mêmes), mais plutôt de variations plus fines, de rééquilibrages subtils des proportions ou de modifications au niveau d'ASV moins abondants.
+
+Il y a quelques différence à noter :
+  - Il y a une régularité au niveau du profil Late. Les barres de la période Late ont une structure de couleurs et de proportions beaucoup plus homogène et stable d'un échantillon à l'autre. On voit plus de *Lactobacillaceae* (en turquoise) et de *Erysipelotrichaceae* (en marron) par rapport a la partie Early qui n'en ont presque pas.
+  - Il y a une variabilité au niveau de la période Early. On observe davantage de fluctuations au début. Par exemple, certains échantillons présentent des proportions plus variables de *Lactobacillaceae* (en turquoise) ou des blocs divers, ainsi qu'une barre grise plus visible (les NA ou taxons non classés). Ici on voit plus de *Lachnospiraceae* (en vert) par rapport a la partie Late qui n'en ont presque pas.
