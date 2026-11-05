@@ -82,4 +82,6 @@ igraph : C’est un package qui sert à analyser et dessiner des réseaux.
 Par exemple ce package est utile pour étudier les interactions entre
 différentes espèces de bactéries.
 
-phyloseq : C’est un package important en écologie microbienne.
+phyloseq : C’est un package important en écologie microbienne qui sert à
+tout regrouper. Ce package permet de calculer la diversité des
+échantillons et de faire des graphiques de composition microbienne.
