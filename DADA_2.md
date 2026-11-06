@@ -1,7 +1,11 @@
 R Notebook
 ================
 
+------------------------------------------------------------------------
+
 # Tutoriel DADA2
+
+------------------------------------------------------------------------
 
 ## Principe de DADA2
 
@@ -44,7 +48,7 @@ des données de microbiote.
 
 # Préparation
 
-Il faut d’abord installer le package *“dada2”*. L’installation de
+Il faut d’abord installer le package <i>“dada2”<i>. L’installation de
 Bioconductor et dada2 se trouve dans le document install.
 
 ``` r
@@ -61,6 +65,8 @@ En exécutant cette commande on charge le package dada2. Cela permet de
 mettre les méthodes d’inférence d’erreurs et de génération d’ASV. Ce qui
 est affiché c’est le numéro de version et cela garantit la
 reproductibilité de l’analyse.
+
+------------------------------------------------------------------------
 
 ``` r
 path <- "/home/rstudio/DADA_2/MiSeq_SOP"
@@ -106,6 +112,8 @@ lancer le traitement.
 Le téléchargement des données MiSeq_SOP se situe dans le document
 import_data.
 
+------------------------------------------------------------------------
+
 ``` r
 # Les noms de fichiers fastq «forward» et «reverse» ont le format suivant : SAMPLENAME_R1_001.fastq et SAMPLENAME_R2_001.fastq
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
@@ -121,25 +129,33 @@ séquençage bruts (au format FASTQ) pour que R puisse les traiter de
 manière ordonnée. En fonction des données d’un article le nom des fastq
 peuvent changer.
 
-\*fnFs \<- sort(list.files(path, pattern=“\_R1_001.fastq”, full.names =
-TRUE))* - Recherche dans le dossier* path\* tous les fichiers
-correspondant au motif des lectures “avant” (forward) :
-\_R1_001.fastq. - *full.names = TRUE* permet de récupèrer le chemin
-d’accès complet (et pas seulement le nom du fichier). - *sort()* permet
-de trier les fichiers par ordre alphabétique pour s’assurer que les
-lectures forward et reverse correspondent bien dans le même ordre par la
-suite.
+<i>fnFs \<- sort(list.files(path, pattern=“\_R1_001.fastq”, full.names =
+TRUE))<i>
 
-\*fnRs \<- sort(list.files(path, pattern=“\_R2_001.fastq”, full.names =
-TRUE))\* - Fait exactement la même chose pour les lectures “arrière”
-(reverse), identifiées par le motif \_R2_001.fastq.
+- Recherche dans le dossier <i>path<i> tous les fichiers correspondant
+  au motif des lectures “avant” (forward) : \_R1_001.fastq.
+- <i>full.names = TRUE<i> permet de récupèrer le chemin d’accès complet
+  (et pas seulement le nom du fichier).
+- <i>sort()<i> permet de trier les fichiers par ordre alphabétique pour
+  s’assurer que les lectures forward et reverse correspondent bien dans
+  le même ordre par la suite.
 
-*sample.names \<- sapply(strsplit(basename(fnFs), “*“),”\[“, 1)* -
-Permet d’extraire automatiquement le nom de chaque échantillon
-(*sample.names*). - Il prend le nom de base du fichier (*basename*), le
-découpe à chaque caractère souligné (***) grâce à *strsplit*, et
-récupère le premier élément (*\[ 1 \]*), qui correspond précisément au
-nom de l’échantillon.
+<i>fnRs \<- sort(list.files(path, pattern=“\_R2_001.fastq”, full.names =
+TRUE))<i>
+
+- Fait exactement la même chose pour les lectures “arrière” (reverse),
+  identifiées par le motif \_R2_001.fastq.
+
+<i>sample.names \<- sapply(strsplit(basename(fnFs), “\_“),”\[“, 1)<i>
+
+- Permet d’extraire automatiquement le nom de chaque échantillon
+  (<i>sample.names<i>).
+- Il prend le nom de base du fichier (<i>basename<i>), le découpe à
+  chaque caractère souligné (\_) grâce à <i>strsplit<i>, et récupère le
+  premier élément (<i>\[ 1 \]<i>), qui correspond précisément au nom de
+  l’échantillon.
+
+------------------------------------------------------------------------
 
 Maintenant que les fichiers sont bien identifiés et associés à leurs
 noms d’échantillons, la suite consiste à inspecter les profils de
@@ -154,8 +170,9 @@ couper/filtrer les séquences.
 plotQualityProfile(fnFs[1:2])
 ```
 
-![](DADA_2_files/figure-gfm/unnamed-chunk-4-1.png)<!-- --> \###
-Commentaires
+![](DADA_2_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+### Commentaires
 
 Ce code permet de contrôler la qualité des données brutes. Elle génère
 un graphique représentant les profils de qualité des scores Phred pour
@@ -192,12 +209,15 @@ Il faut supprimer les derniers nucléotides afin d’éviter les erreurs
 moins bien contrôlées qui peuvent survenir à cet endroit. Ici, on enlève
 les séquences directes à la position **240**, là où commence les pics.
 
+------------------------------------------------------------------------
+
 ``` r
 plotQualityProfile(fnRs[1:2])
 ```
 
-![](DADA_2_files/figure-gfm/unnamed-chunk-5-1.png)<!-- --> \###
-Commentaires
+![](DADA_2_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+### Commentaires
 
 Cette commande est exactement la même que la précédente, mais cette fois
 c’est pour les lectures “arrière” (reverse). Donc ce code génère un
@@ -226,6 +246,8 @@ ce qui permet un chevauchement quasi complet des séquences directes et
 inverses en se basant sur un rognage entièrement guidé par les scores de
 qualité.
 
+------------------------------------------------------------------------
+
 # Filtrer et découper
 
 ``` r
@@ -242,24 +264,33 @@ Ces lignes de code servent à préparer les chemins de destination et les
 noms des fichiers filtrés qui seront générés lors de la prochaine étape
 de nettoyage.
 
-\*filtFs \<- file.path(path, “filtered”, paste0(sample.names,
-“\_F_filt.fastq.gz”))* - Crée les chemins d’accès complets où seront
-stockés les fichiers forward (R1) après filtrage. -* file.path\*
-assemble proprement les dossiers. - \*paste0(sample.names,
-“\_F_filt.fastq.gz”)\* prend chaque nom d’échantillon et lui ajoute le
-suffixe \*\_F_filt.fastq.gz\* (indiquant qu’il s’agit du fichier forward
-filtré et compressé). - Le dossier de destination sera un sous-dossier
-nommé *filtered* à l’intérieur de votre répertoire de travail (*path*).
+<i>filtFs \<- file.path(path, “filtered”, paste0(sample.names,
+“\_F_filt.fastq.gz”))<i>
 
-\*filtRs \<- file.path(path, “filtered”, paste0(sample.names,
-“\_R_filt.fastq.gz”))* - Fait exactement la même chose pour les fichiers
-reverse (R2), en leur attribuant le suffixe* \_R_filt.fastq.gz\* dans le
-même sous-dossier *filtered*
+- Crée les chemins d’accès complets où seront stockés les fichiers
+  forward (R1) après filtrage.
+- <i>file.path<i> assemble proprement les dossiers.
+- <i>paste0(sample.names, “\_F_filt.fastq.gz”)<i> prend chaque nom
+  d’échantillon et lui ajoute le suffixe <i>\_F_filt.fastq.gz<i>
+  (indiquant qu’il s’agit du fichier forward filtré et compressé).
+- Le dossier de destination sera un sous-dossier nommé <i>filtered<i> à
+  l’intérieur de votre répertoire de travail (<i>path<i>).
 
-*names(filtFs) \<- sample.names* et *names(filtRs) \<- sample.names* -
-Associent un nom à chaque élément de ces vecteurs. Cela permet à DADA2
-de garder une correspondance propre entre chaque fichier de sortie et
-son échantillon d’origine.
+<i>filtRs \<- file.path(path, “filtered”, paste0(sample.names,
+“\_R_filt.fastq.gz”))<i>
+
+- Fait exactement la même chose pour les fichiers reverse (R2), en leur
+  attribuant le suffixe <i>\_R_filt.fastq.gz<i> dans le même
+  sous-dossier <i>filtered<i>
+
+<i>names(filtFs) \<- sample.names<i> et <i>names(filtRs) \<-
+sample.names<i>
+
+- Associent un nom à chaque élément de ces vecteurs. Cela permet à DADA2
+  de garder une correspondance propre entre chaque fichier de sortie et
+  son échantillon d’origine.
+
+------------------------------------------------------------------------
 
 ``` r
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
@@ -279,38 +310,45 @@ head(out)
 ### Commentaires
 
 Cette commande réalise le filtrage et le rognage (trimming) des lectures
-de séquençage, puis stocke les résultats dans la variable *out* dont
-*head(out)* affiche les premières lignes.
+de séquençage, puis stocke les résultats dans la variable <i>out<i> dont
+<i>head(out)<i> affiche les premières lignes.
 
 Plus en détail :
 
-- *fnFs*, *filtFs*, *fnRs*, *filtRs* sont les fichiers d’entrée (forward
-  et reverse bruts) et les fichiers de sortie.
+- <i>fnFs<i>, <i>filtFs<i>, <i>fnRs<i>, <i>filtRs<i> sont les fichiers
+  d’entrée (forward et reverse bruts) et les fichiers de sortie.
 - truncLen = c(240, 160) c’est lui qui rogne en longueur.
   - 240 : Tronque les lectures forward (R1) à 240 nucléotides.
   - 160 : Tronque les lectures reverse (R2) à 160 nucléotides.
 
-Nous utiliserons les paramètres de filtrage standard. - *maxN = 0*
-interdit la présence de bases ambiguës. Tout read contenant un N sera
-éliminé. - *maxEE = c(2, 2)* est le nombre maximal d’erreurs attendues
-(Expected Errors) autorisé par read. Ici, on autorise au maximum 2
-erreurs cumulées par read forward et 2 par read reverse. C’est un filtre
-de qualité beaucoup plus rigoureux que de se baser uniquement sur une
-moyenne. - *truncQ = 2* Permet de tronques une lecture dès qu’il
-rencontre un score de qualité Phred inférieur ou égal à 2. - *rm.phix =
-TRUE* Permet de supprimer automatiquement les reads correspondant au
-génome du phage PhiX - *compress = TRUE* Permet de compresser les
-fichiers de sortie au format .fastq.gz. - *multithread = FALSE* Permet
-de désactiver le calcul en parallèle. - *out* est un tableau de comptage
-qui résume, pour chaque échantillon, le nombre de reads en entrée (reads
-in) et le nombre de reads conservés après filtrage (reads out). - La
-commande head(out) permet d’afficher les 6 premières lignes de ce
-tableau pour vérifier rapidement que la grande majorité des reads passe
-les filtres
+Nous utiliserons les paramètres de filtrage standard.
+
+- <i>maxN = 0<i> interdit la présence de bases ambiguës. Tout read
+  contenant un N sera éliminé.
+- <i>maxEE = c(2, 2)<i> est le nombre maximal d’erreurs attendues
+  (Expected Errors) autorisé par read. Ici, on autorise au maximum 2
+  erreurs cumulées par read forward et 2 par read reverse. C’est un
+  filtre de qualité beaucoup plus rigoureux que de se baser uniquement
+  sur une moyenne.
+- <i>truncQ = 2<i> permet de tronques une lecture dès qu’il rencontre un
+  score de qualité Phred inférieur ou égal à 2.
+- <i>rm.phix = TRUE<i> permet de supprimer automatiquement les reads
+  correspondant au génome du phage PhiX
+- <i>compress = TRUE<i> permet de compresser les fichiers de sortie au
+  format .fastq.gz.
+- <i>multithread = FALSE<i> permet de désactiver le calcul en parallèle.
+- <i>out<i> est un tableau de comptage qui résume, pour chaque
+  échantillon, le nombre de reads en entrée (reads in) et le nombre de
+  reads conservés après filtrage (reads out).
+- La commande head(out) permet d’afficher les 6 premières lignes de ce
+  tableau pour vérifier rapidement que la grande majorité des reads
+  passe les filtres
+
+------------------------------------------------------------------------
 
 # Les taux d’erreur
 
-L’algorithme DADA2 utilise un modèle d’erreur paramétrique *err* et
+L’algorithme DADA2 utilise un modèle d’erreur paramétrique <i>err<i> et
 chaque jeu de données d’amplicons possède un ensemble différent de taux
 d’erreur.
 
@@ -322,15 +360,18 @@ errF <- learnErrors(filtFs, multithread=TRUE)
 
 ### Commentaires
 
-*learnErrors* C’est la fonction qui analyse les fichiers de séquences
-filtrés pour calculer le taux d’erreur de la machine de séquençage.
+<i>learnErrors<i> c’est la fonction qui analyse les fichiers de
+séquences filtrés pour calculer le taux d’erreur de la machine de
+séquençage.
 
-*filtFs* c’est le vecteur contenant les chemins vers vos fichiers de
+<i>filtFs<i> c’est le vecteur contenant les chemins vers vos fichiers de
 lecture forward filtrés.
 
-*multithread = TRUE* Permet d’activer le calcul en parallèle sur
+<i>multithread = TRUE<i> permet d’activer le calcul en parallèle sur
 plusieurs cœurs du processeur pour accélérer cette étape qui demande pas
 mal de calculs mathématiques.
+
+------------------------------------------------------------------------
 
 ``` r
 errR <- learnErrors(filtRs, multithread=TRUE)
@@ -341,6 +382,8 @@ errR <- learnErrors(filtRs, multithread=TRUE)
 ### Commentaires
 
 C’est la même chose que le code au-dessus mais pour les reverse.
+
+------------------------------------------------------------------------
 
 ``` r
 plotErrors(errF, nominalQ=TRUE)
@@ -380,6 +423,8 @@ observés. Si la courbe suit bien les points, cela signifie que le modèle
 d’erreur a correctement “compris” le profil du run de séquençage et
 qu’il sera fiable pour corriger les erreurs par la suite.
 
+------------------------------------------------------------------------
+
 # Inférence d’échantillon
 
 ``` r
@@ -412,16 +457,16 @@ dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 Cette ligne est l’étape d’inférence des variants de séquence (dénoisage)
 pour les lectures forward.
 
-*dada()* C’est la fonction principale de l’algorithme DADA2.
+<i>dada()<i> c’est la fonction principale de l’algorithme DADA2.
 Contrairement aux méthodes traditionnelles qui regroupent les séquences
 par similarité, cette fonction utilise le modèle statistique d’erreurs
 pour identifier les véritables séquences biologiques exactes, appelées
 ASV (Amplicon Sequence Variants).
 
-*err = errF* on met ici le modèle d’erreur *(errF)* que l’on vient de
-calculer avec *learnErrors()*. C’est grâce à cette matrice de taux
-d’erreur que l’algorithme sait statistiquement si une variation entre
-deux séquences est due à une erreur de la machine ou à une réelle
+<i>err = errF<i> on met ici le modèle d’erreur <i>(errF)<i> que l’on
+vient de calculer avec <i>learnErrors()<i>. C’est grâce à cette matrice
+de taux d’erreur que l’algorithme sait statistiquement si une variation
+entre deux séquences est due à une erreur de la machine ou à une réelle
 mutation biologique.
 
 Ici, l’algorithme analyse l’abondance des séquences et leurs scores de
@@ -429,6 +474,8 @@ qualité. Il sépare les séquences en fonction de leur probabilité d’avoir
 été générées par erreur à partir d’une séquence parente plus abondante.
 Il est capable de distinguer deux séquences qui ne diffèrent que d’un
 seul nucléotide.
+
+------------------------------------------------------------------------
 
 ``` r
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
@@ -459,6 +506,8 @@ dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 
 C’est la même chose que le code précédent mais pour les reverse.
 
+------------------------------------------------------------------------
+
 ``` r
 dadaFs[[1]]
 ```
@@ -475,6 +524,8 @@ de votre jeu de données.
 
 DADA2 a identifié 128 variants de séquence réels parmi les 1979
 séquences uniques du premier échantillon.
+
+------------------------------------------------------------------------
 
 # Fusionner les lectures appariées
 
@@ -551,24 +602,26 @@ est permis en alignant les lectures directes débruitées avec le
 complément inverse des lectures inverses débruitées qui convient. Puis
 cela permet de reconstruire la séquence complète, appelée contig.
 
-*mergePairs()* c’est la fonction qui permet de fusionner les lectures
-forward et les lectures reverse de chaque fragment d’ADN.
+<i>mergePairs()<i> c’est la fonction qui permet de fusionner les
+lectures forward et les lectures reverse de chaque fragment d’ADN.
 
-*dadaFs*, *filtFs*, *dadaRs*, *filtRs* Permet de fournir à la fonction
-les résultats de débruitage ainsi que les chemins des fichiers filtrés
-correspondants. DADA2 a besoin des lectures filtrées d’origine pour
-aligner les séquences qui se chevauchent.
+<i>dadaFs<i>, <i>filtFs<i>, <i>dadaRs<i>, <i>filtRs<i> permet de fournir
+à la fonction les résultats de débruitage ainsi que les chemins des
+fichiers filtrés correspondants. DADA2 a besoin des lectures filtrées
+d’origine pour aligner les séquences qui se chevauchent.
 
 Par défaut, la fusion des lectures n’est validée que si les séquences
 avant et arrière partagent une zone de chevauchement d’au moins 12 bases
 parfaitement identiques.
 
-*verbose = TRUE* : Permet d’afficher un rapport textuel dans la console
-indiquant combien de lectures ont pu être fusionnées avec succès pour
-chaque échantillon.
+<i>verbose = TRUE<i> permet d’afficher un rapport textuel dans la
+console indiquant combien de lectures ont pu être fusionnées avec succès
+pour chaque échantillon.
 
-*head(mergers\[\[1\]\])* : Permet de visualiser les 6 premières lignes
+<i>head(mergers\[\[1\]\])<i> permet de visualiser les 6 premières lignes
 du tableau de fusion pour le premier échantillon.
+
+------------------------------------------------------------------------
 
 # Construire une table de séquence
 
@@ -587,20 +640,26 @@ dimensions
 
 ### Commentaires
 
-*seqtab \<- makeSequenceTable(mergers)* - *makeSequenceTable()* C’est
-une fonction qui rassemble les lectures fusionnées de tous vos
-échantillons dans un unique tableau global (une matrice).
+<i>seqtab \<- makeSequenceTable(mergers)<i>
 
-*dim(seqtab)* Cela permet d’afficher les dimension du tableau sous la
-forme de \[nombre_de_ligne, nombre_de_colonnes\].
+- <i>makeSequenceTable()<i> c’est une fonction qui rassemble les
+  lectures fusionnées de tous vos échantillons dans un unique tableau
+  global (une matrice).
+
+<i>dim(seqtab)<i> cela permet d’afficher les dimension du tableau sous
+la forme de \[nombre_de_ligne, nombre_de_colonnes\].
 
 ### Interprétation
 
-Le résultat 20 293 correspond : - Les 20 lignes sont les 20 échantillons
-qui ont été traités avec succès et ont tous conservé des données valides
-jusqu’à cette étape. Aucun échantillon n’a été perdu en route. - Les 293
-sont les 293 variants de séquences uniques (ASV) au total dans
-l’ensemble du groupe.
+Le résultat 20 293 correspond :
+
+- Les 20 lignes sont les 20 échantillons qui ont été traités avec succès
+  et ont tous conservé des données valides jusqu’à cette étape. Aucun
+  échantillon n’a été perdu en route.
+- Les 293 sont les 293 variants de séquences uniques (ASV) au total dans
+  l’ensemble du groupe.
+
+------------------------------------------------------------------------
 
 ``` r
 # Examiner la répartition des longueurs des séquences
@@ -613,20 +672,22 @@ table(nchar(getSequences(seqtab)))
 
 ### Commentaires
 
-*getSequences(seqtab)* Permet d’extraire la séquence d’ADN de chaque
+<i>getSequences(seqtab)<i> permet d’extraire la séquence d’ADN de chaque
 colonne de la table d’ASV.
 
-*nchar(…)* Permet de calculer le nombre de caractères (la longueur
+<i>nchar(…)<i> permet de calculer le nombre de caractères (la longueur
 exacte en paires de bases) de chaque séquence d’ADN.
 
-*table(…)* Permet de créer un tableau de fréquences pour compter combien
-d’ASV ont telle ou telle longueur.
+<i>table(…)<i> permet de créer un tableau de fréquences pour compter
+combien d’ASV ont telle ou telle longueur.
 
 ### Interprétation
 
-Le tableau : - La première ligne c’est la longueur de la séquence en
-paires de bases. - La deuxième ligne c’est le nombre d’ASV (la quantité
-de variants uniques qui ont cette longueur exacte).
+Le tableau :
+
+- La première ligne c’est la longueur de la séquence en paires de bases.
+- La deuxième ligne c’est le nombre d’ASV (la quantité de variants
+  uniques qui ont cette longueur exacte).
 
 Lorsque l’on exécute cette ligne de code on affiche une liste de
 longueurs d’ADN associées à un nombre d’ASV.
@@ -646,6 +707,8 @@ plus courtes ou beaucoup plus longues), cela aurai pu nous indiquer des
 produits d’amplification non spécifiques, des amorces mal coupées ou des
 artefacts.
 
+------------------------------------------------------------------------
+
 # Supprimer les chimères
 
 ``` r
@@ -662,28 +725,30 @@ dim(seqtab.nochim)
 
 ### Commentaires
 
-*removeBimeraDenovo()* c’est un fonction conçue pour détecter et
+<i>removeBimeraDenovo()<i> c’est un fonction conçue pour détecter et
 éliminer les séquences chimériques (bimeras).
 
-*method = “consensus”* Permet d’indiquer à l’algorithme comment
+<i>method = “consensus”<i> permet d’indiquer à l’algorithme comment
 identifier les chimères. La méthode par consensus examine chaque
 échantillon individuellement, puis applique un critère global pour
 décider si une séquence est chimérique ou non.
 
-*verbose = TRUE* Permet d’afficher un rapport textuel dans la console
-indiquant le pourcentage et le nombre exact de séquences chimériques
-détectées et supprimées.
+<i>verbose = TRUE<i> permet d’afficher un rapport textuel dans la
+console indiquant le pourcentage et le nombre exact de séquences
+chimériques détectées et supprimées.
 
-*dim(seqtab.nochim)* Permet de vérifier les dimensions du nouveau
+<i>dim(seqtab.nochim)<i> permet de vérifier les dimensions du nouveau
 tableau après nettoyage.
 
 ### Interprétation
 
-Qu’est-ce qu’une chimère ? Pendant la PCR, il arrive qu’un brin d’ADN
-s’arrête prématurément, puis vienne se relancer sur une autre matrice
-d’ADN au cycle suivant. Cela crée un faux “hybride” (une chimère) entre
-deux bactéries différentes. Si on ne les supprime pas, ces artefacts
-faussent complètement la diversité biologique.
+Qu’est-ce qu’une chimère ?
+
+Pendant la PCR, il arrive qu’un brin d’ADN s’arrête prématurément, puis
+vienne se relancer sur une autre matrice d’ADN au cycle suivant. Cela
+crée un faux “hybride” (une chimère) entre deux bactéries différentes.
+Si on ne les supprime pas, ces artefacts faussent complètement la
+diversité biologique.
 
 Les 20 lignes (les échantillons) ne bougent pas. Le nombre
 d’échantillons reste identique. Aucun échantillon n’a été supprimé, ils
@@ -696,6 +761,8 @@ Les colonnes diminuent parce que la différence (par exemple, les ~43
 colonnes en moins) correspond aux chimères. Des erreurs de PCR (des
 bouts d’ADN collés par erreur ensemble) que l’algorithme a repérées et
 jetées à la poubelle.
+
+------------------------------------------------------------------------
 
 ``` r
 sum(seqtab.nochim)/sum(seqtab)
@@ -728,6 +795,8 @@ environ 21% des variant de séquences fusionnés, mais en tenant compte de
 leur abondance, elles ne représentent plus qu’environ 4 % des lectures
 de séquences fusionnées.
 
+------------------------------------------------------------------------
+
 # Suivi des lectures
 
 Maintenant, on va regarder le nombre de lectures qui ont franchi chaque
@@ -752,17 +821,17 @@ head(track)
 
 ### Commentaires
 
-*getN \<- function(…)* Permet de créer un petit outil pour compter
+<i>getN \<- function(…)<i> permet de créer un petit outil pour compter
 facilement le nombre de séquences restantes.
 
-*track \<- cbind(…)* Permet de rassembler dans un seul et même tableau
-toutes les étapes clés (le départ, le filtrage, la correction,
+<i>track \<- cbind(…)<i> permet de rassembler dans un seul et même
+tableau toutes les étapes clés (le départ, le filtrage, la correction,
 l’assemblage et le nettoyage final).
 
-*colnames / rownames* Permet de donner des noms clairs aux colonnes et
-aux lignes (les noms de vos échantillons).
+<i>colnames / rownames<i> permet de donner des noms clairs aux colonnes
+et aux lignes (les noms de vos échantillons).
 
-*head(track)* Permet d’afficher les premières lignes de ce tableau
+<i>head(track)<i> permet d’afficher les premières lignes de ce tableau
 récapitulatif.
 
 ### Interprétation
@@ -777,6 +846,8 @@ Mais ici on peut voir que nous avons conservé la majorité de nos données
 brutes, et il n’y a pas de baisse excessive associée à une étape
 particulière.
 
+------------------------------------------------------------------------
+
 # Attribuer une taxonomie
 
 ``` r
@@ -785,23 +856,25 @@ taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/DADA_2/silva_nr99_v138.2_to
 
 ### Commentaires
 
-*assignTaxonomy(…)* C’est la fonction de DADA2 qui sert à donner un nom
-(une identité biologique) à chacun de vos ASV.
+<i>assignTaxonomy(…)<i> c’est la fonction de DADA2 qui sert à donner un
+nom (une identité biologique) à chacun de vos ASV.
 
 Le fichier de référence (silva_nr99_v138.2_toGenus_trainset.fa.gz) :
 C’est une immense base de données officielle (appelée SILVA) que l’on
-téléchargé sur le document import_data. Elle sert de dictionnaire :
-DADA2 compare l’ADN des ASV de l’article avec cette base pour identifier
-à quelle bactérie ils appartiennent.
+téléchargé sur le document import_data. Elle sert de dictionnaire. DADA2
+compare l’ADN des ASV de l’article avec cette base pour identifier à
+quelle bactérie ils appartiennent.
 
 ### Interprétation
 
-*taxa* contient un grand tableau où chaque ligne correspond à un ASV, et
-les colonnes donnent sa classification du plus général au plus précis
-(Règne, Embranchement, Classe, Ordre, Famille, Genre).
+<i>taxa<i> contient un grand tableau où chaque ligne correspond à un
+ASV, et les colonnes donnent sa classification du plus général au plus
+précis (Règne, Embranchement, Classe, Ordre, Famille, Genre).
 
 Cela sert à transformer les séquences d’ADN brutes en vrais noms de
 bactéries.
+
+------------------------------------------------------------------------
 
 ``` r
 taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz")
@@ -809,7 +882,7 @@ taxa <- addSpecies(taxa, "/home/rstudio/DADA_2/silva_v138.2_assignSpecies.fa.gz"
 
 ### Commentaires
 
-*addSpecies(…)* C’est une fonction de DADA2 qui vient compléter le
+<i>addSpecies(…)<i> C’est une fonction de DADA2 qui vient compléter le
 tableau de classification.
 
 Le fichier silva_v138.2_assignSpecies.fa.gz : C’est le dictionnaire
@@ -823,6 +896,8 @@ Le tableau de taxonomie (taxa) est enrichi. Jusqu’à présent, les
 bactéries étaient identifiées jusqu’au genre mais maintenant cette étape
 essaie d’aller encore plus loin en précisant l’espèce exacte lorsque
 c’est possible grâce à une correspondance parfaite.
+
+------------------------------------------------------------------------
 
 ``` r
 taxa.print <- taxa 
@@ -847,27 +922,29 @@ head(taxa.print)
 
 ### Commentaires
 
-*taxa.print \<- taxa* Permet de faire une copie exacte du tableau de
+<i>taxa.print \<- taxa<i> permet de faire une copie exacte du tableau de
 taxonomie dans une nouvelle variable, pour ne pas modifier le tableau
 original.
 
-*rownames(taxa.print) \<- NULL* Permet de supprimer les noms des lignes
-(qui correspondent aux longues séquences d’ADN des ASV). Cela évite
-d’avoir un affichage illisible et encombré dans la console.
+<i>rownames(taxa.print) \<- NULL<i> permet de supprimer les noms des
+lignes (qui correspondent aux longues séquences d’ADN des ASV). Cela
+évite d’avoir un affichage illisible et encombré dans la console.
 
-*head(taxa.print)* Permet d’afficher les premières lignes de ce tableau
-nettoyé.
+<i>head(taxa.print)<i> permet d’afficher les premières lignes de ce
+tableau nettoyé.
 
 ### Interprétation
 
 Ce code permet de voir proprement à quoi ressemblent la classifications.
 
-Ici on voit que les *Bacteroidota* sont bien représentés parmi les
+Ici on voit que les <i>Bacteroidota<i> sont bien représentés parmi les
 taxons les plus abondants dans ces échantillons fécaux. Mais
 malheureusement peu d’espèces ont pu être identifiées, car il est
 souvent impossible d’établir une identification précise à partir de
 juste V4 du gène 16S, et aussi parce que les bases de données de
 référence couvrent peu le microbiote intestinal de la souris.
+
+------------------------------------------------------------------------
 
 # Évaluer la précision
 
@@ -881,14 +958,15 @@ cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock c
 
 ### Commentaires
 
-*seqtab.nochim\[“Mock”,\]* Permrt d’isoler l’échantillon appelé “Mock”.
-C’est un échantillon témoin positif (un mélange de bactéries dont on
-connaît exactement la composition au départ).
+<i>seqtab.nochim\[“Mock”,\]<i> permet d’isoler l’échantillon appelé
+“Mock”. C’est un échantillon témoin positif (un mélange de bactéries
+dont on connaît exactement la composition au départ).
 
-*sort(…, decreasing=TRUE)* Permet de ne garder que les ASV présents dans
-ce témoin (compte \> 0) et les trie du plus abondant au moins abondant.
+<i>sort(…, decreasing=TRUE)<i> permet de ne garder que les ASV présents
+dans ce témoin (compte \> 0) et les trie du plus abondant au moins
+abondant.
 
-*cat(…)* Permet d’afficher un message dans la console indiquant le
+<i>cat(…)<i> permet d’afficher un message dans la console indiquant le
 nombre total d’ASV uniques que DADA2 a trouvés dans ce témoin.
 
 ### Interprétation
@@ -898,6 +976,8 @@ de la communauté Mock, ce test permet de vérifier si DADA2 a vu juste.
 On chercher a savoir si le nombre d’ASV affiché est très proche du
 nombre réel de bactéries contenues dans le témoin, cela prouve que le
 pipeline est très précis et qu’il ne crée pas de faux variants
+
+------------------------------------------------------------------------
 
 ``` r
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
@@ -909,16 +989,16 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 
 ### Commentaires
 
-*mock.ref \<- …* Cela permet de charger le fichier de référence officiel
-(HMP_MOCK.v35.fasta) qui contient les vraies séquences ADN du témoin (la
-communauté Mock que l’on est censé trouver).
+<i>mock.ref \<- …<i> cela permet de charger le fichier de référence
+officiel (HMP_MOCK.v35.fasta) qui contient les vraies séquences ADN du
+témoin (la communauté Mock que l’on est censé trouver).
 
-*match.ref \<- …* Cela permet de comparer les ASV trouvés dans
+<i>match.ref \<- …<i> cela permet de comparer les ASV trouvés dans
 l’échantillon témoin (Mock) avec cette liste officielle pour voir s’ils
 correspondent parfaitement.
 
-*cat(…)* Affiche le nombre de séquences qui correspondent exactement à
-la réalité attendue.
+<i>cat(…)<i> affiche le nombre de séquences qui correspondent exactement
+à la réalité attendue.
 
 ### Interprétation
 
@@ -932,6 +1012,8 @@ bactériennes et DADA2 a lui identifié 20 ASV correspondant exactement
 aux génomes de référence des membres attendus de la communauté. Le
 pourcentage d’erreurs qui subsiste dans les données après traitement par
 DADA2 pour cet échantillon est de 0 %.
+
+------------------------------------------------------------------------
 
 # Phyloseq
 
@@ -1086,16 +1168,18 @@ theme_set(theme_bw())
 
 ### Commentaires
 
-*theme_set(…)* C’est une fonction de la bibliothèque graphique ggplot2
-qui permet de définir un style visuel par défaut pour tous les
+<i>theme_set(…)<i> C’est une fonction de la bibliothèque graphique
+ggplot2 qui permet de définir un style visuel par défaut pour tous les
 graphiques.
 
-*theme_bw()* C’est le style choisi, qui signifie “Black and White”. Il
-applique un fond blanc épuré, des axes noirs bien nets et une grille
+<i>theme_bw()<i> C’est le style choisi, qui signifie “Black and White”.
+Il applique un fond blanc épuré, des axes noirs bien nets et une grille
 grise discrète.
 
 Cette commande change l’esthétique des graphiques pour donner un aspect
 propre et facile à lire.
+
+------------------------------------------------------------------------
 
 ``` r
 samples.out <- rownames(seqtab.nochim)
@@ -1114,22 +1198,24 @@ rownames(samdf) <- samples.out
 Ce bloc de code sert à créer un tableau de métadonnées en extrayant des
 informations directement à partir de leurs noms.
 
-*rownames(seqtab.nochim)* Permet de récupèrer la liste des noms des 20
-échantillons.
+<i>rownames(seqtab.nochim)<i> permet de récupèrer la liste des noms des
+20 échantillons.
 
-*strsplit et substr* Permet de découper les noms pour en extraire des
-informations cachées (par exemple, le jour du prélèvement).
+<i>strsplit et substr<i> permet de découper les noms pour en extraire
+des informations cachées (par exemple, le jour du prélèvement).
 
-*samdf \<- data.frame(…)* Permet de rassembler toutes ces informations
-dans un tableau de données avec trois colonnes : Subject, Gender, et
-Day.
+<i>samdf \<- data.frame(…)<i> permet de rassembler toutes ces
+informations dans un tableau de données avec trois colonnes : Subject,
+Gender, et Day.
 
-*samdf\$When \<- …* Permet de créer une nouvelle colonne qui classe les
-prélèvements en deux catégories : “Early” (les premiers jours) ou “Late”
-(après 100 jours).
+<i>samdf\$When \<- …<i> permet de créer une nouvelle colonne qui classe
+les prélèvements en deux catégories : “Early” (les premiers jours) ou
+“Late” (après 100 jours).
 
 Ce code nous permet de faire un tableau de métadonnées qui nous permet
 après de faire de statistiques et des graphiques.
+
+------------------------------------------------------------------------
 
 ``` r
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
@@ -1140,14 +1226,16 @@ ps <- prune_samples(sample_names(ps) != "Mock", ps)
 
 ### Commentaires
 
-*phyloseq(…)* C’est un fonction qui assemble et fusionne les trois
-éléments en un objet unique et structuré ( on le nomme *ps*).
+<i>phyloseq(…)<i> c’est un fonction qui assemble et fusionne les trois
+éléments en un objet unique et structuré ( on le nomme <i>ps<i>).
 
-Les trois éléments sont : - Le tableau des abondances d’ADN
-(*seqtab.nochim*). - La carte d’identité des échantillons (*samdf*). -
-Le dictionnaire des noms de bactéries (*taxa*).
+Les trois éléments sont :
 
-*prune_samples(sample_names(ps) != “Mock”, ps)* Permet de retirer
+- Le tableau des abondances d’ADN (<i>seqtab.nochim<i>).
+- La carte d’identité des échantillons (<i>samdf<i>).
+- Le dictionnaire des noms de bactéries (<i>taxa<i>).
+
+<i>prune_samples(sample_names(ps) != “Mock”, ps)<i> permet de retirer
 l’échantillon “Mock” de cet objet final.
 
 Ce code permet de créer la base de données centrale et officielle
@@ -1159,6 +1247,8 @@ On retire le Mock car il a déjà rempli son rôle de contrôle qualité
 partie des vrais sujets de votre étude. On le jette de cet objet final
 pour qu’il ne fausse pas les calculs de diversité et les comparaisons
 entre vos 20 échantillons.
+
+------------------------------------------------------------------------
 
 ``` r
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
@@ -1176,16 +1266,16 @@ ps
 
 ### Commentaires
 
-*Biostrings::DNAStringSet(taxa_names(ps))* Permet de récupèrer les
+<i>Biostrings::DNAStringSet(taxa_names(ps))<i> permet de récupèrer les
 longues séquences d’ADN qui servaient de noms aux bactéries.
 
-*merge_phyloseq(ps, dna)* Permet d’intègrer ces séquences d’ADN
+<i>merge_phyloseq(ps, dna)<i> permet d’intègrer ces séquences d’ADN
 directement à l’intérieur de l’objet phyloseq pour qu’elles y restent
 rangées.
 
-*taxa_names(ps) \<- paste0(“ASV”, seq(ntaxa(ps)))* Permet de remplacer
-les suites de lettres d’ADN par des noms courts et propres : ASV1, ASV2,
-ASV3… jusqu’à ASV232.
+<i>taxa_names(ps) \<- paste0(“ASV”, seq(ntaxa(ps)))<i> permet de
+remplacer les suites de lettres d’ADN par des noms courts et propres :
+ASV1, ASV2, ASV3… jusqu’à ASV232.
 
 ### Interprétation
 
@@ -1193,25 +1283,30 @@ Ce code permet de remplacer les séquences d’ADN complète par des noms
 courts pour les ASV. C’est plus pratique d’avoir des noms courts pour
 travailler avec des tableux et des visualisation de phyloseq. Par
 contre, on conserve quand même les séquences d’ADN complètes. Les
-séquences d’ADN des ASV sont stockées dans *refseq* de l’objet phyloseq
-et peuvent être récupérées grâce à refseq(ps). Les taxons sont également
-renommés par des nom courts et c’est ces nom couts des taxons qui
-apparaîtront dans les tableux et les graphiques.
+séquences d’ADN des ASV sont stockées dans <i>refseq<i> de l’objet
+phyloseq et peuvent être récupérées grâce à refseq(ps). Les taxons sont
+également renommés par des nom courts et c’est ces nom couts des taxons
+qui apparaîtront dans les tableux et les graphiques.
 
 Le résumé affiché confirme que l’objet phyloseq (ps) est complet et prêt
-pour les analyses. - *otu_table() \[ 232 taxa and 19 samples \]* : Il
-reste 232 variantes bactériennes (ASV) réparties sur 19 échantillons (20
-échantillons de départ, moins le témoin “Mock” qu’on a retiré). -
-*sample_data() \[ 19 samples by 4 sample variables \]* : Les 19
-échantillons ont bien leur carte d’identité à 4 critères (Sujet, Sexe,
-Jour, Période Early/Late). - *tax_table() \[ 232 taxa by 7 taxonomic
-ranks \]* : Chacun des 232 ASV possède sa classification complète. -
-*refseq() \[ 232 reference sequences \]* : Les vraies séquences d’ADN
-sont bien enregistrées en arrière-plan, associées à leurs noms propres
-(ASV1, etc.).
+pour les analyses.
+
+- <i>otu_table() \[ 232 taxa and 19 samples \]<i> : Il reste 232
+  variantes bactériennes (ASV) réparties sur 19 échantillons (20
+  échantillons de départ, moins le témoin “Mock” qu’on a retiré).
+- <i>sample_data() \[ 19 samples by 4 sample variables \]<i> : Les 19
+  échantillons ont bien leur carte d’identité à 4 critères (Sujet, Sexe,
+  Jour, Période Early/Late).
+- <i>tax_table() \[ 232 taxa by 7 taxonomic ranks \]<i> : Chacun des 232
+  ASV possède sa classification complète.
+- <i>refseq() \[ 232 reference sequences \]<i> : Les vraies séquences
+  d’ADN sont bien enregistrées en arrière-plan, associées à leurs noms
+  propres (ASV1, etc.).
 
 Donc les données sont nettoyées, renommées et structurées. On peut
 passer aux graphiques et aux statistiques de diversité.
+
+------------------------------------------------------------------------
 
 ## Visualiser l’alpha-diversité :
 
@@ -1235,23 +1330,26 @@ plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
     ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
     ## generated.
 
-![](DADA_2_files/figure-gfm/unnamed-chunk-32-1.png)<!-- --> \###
-Commentaires
+![](DADA_2_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
-*plot_richness(…)* C’est une fonction du package phyloseq conçue pour
-calculer et afficher la diversité alpha (la richesse et l’équitabilité
-des espèces à l’intérieur de chaque échantillon).
+### Commentaires
 
-*x=“Day”* Permet de placer le temps (en jours) sur l’axe horizontal.
+<i>plot_richness(…)<i> c’est une fonction du package phyloseq conçue
+pour calculer et afficher la diversité alpha (la richesse et
+l’équitabilité des espèces à l’intérieur de chaque échantillon).
 
-*measures=c(“Shannon”, “Simpson”)* Permet de calculer et d’afficher avec
-deux indices écologiques : - *Shannon* Permet de prendre en compte à la
-fois le nombre d’espèces et leur répartition (sensible aux espèces
-rares). - *Simpson* Permet de mettre davantage l’accent sur les espèces
-dominantes.
+<i>x=“Day”<i> permet de placer le temps (en jours) sur l’axe horizontal.
 
-*color=“When”* Permet d’associer une couleur aux points en fonction de
-la période (Early en orange ou Late en bleu) définie dans les
+<i>measures=c(“Shannon”, “Simpson”)<i> permet de calculer et d’afficher
+avec deux indices écologiques :
+
+- <i>Shannon<i> permet de prendre en compte à la fois le nombre
+  d’espèces et leur répartition (sensible aux espèces rares).
+- <i>Simpson<i> permet de mettre davantage l’accent sur les espèces
+  dominantes.
+
+<i>color=“When”<i> permet d’associer une couleur aux points en fonction
+de la période (Early en orange ou Late en bleu) définie dans les
 métadonnées.
 
 ### Interprétation
@@ -1282,11 +1380,13 @@ que :
 
 Maintenant on peut analyser les deux graphiques en même temps. Si on
 observe l’axe vertical (des scores des indices de Shannon et Simpson),
-on voit : - Un chevauchement des groupes. Les points orange et les
-points bleu couvrent globalement la même plage de valeurs. - Il y a
-aussi une absence de tendance tranchée. Il n’y a pas de groupe qui se
-détache nettement en haut ou en bas du graphique. Les niveaux globaux de
-diversité restent comparables entre le début et la fin.
+on voit :
+
+- Un chevauchement des groupes. Les points orange et les points bleu
+  couvrent globalement la même plage de valeurs.
+- Il y a aussi une absence de tendance tranchée. Il n’y a pas de groupe
+  qui se détache nettement en haut ou en bas du graphique. Les niveaux
+  globaux de diversité restent comparables entre le début et la fin.
 
 ### Conclusion :
 
@@ -1307,6 +1407,8 @@ analyses d’ordination comme les distances de Bray-Curtis) pour voir si,
 malgré une diversité interne stable, la composition des espèces a
 totalement changé au cours du temps.
 
+------------------------------------------------------------------------
+
 ## Analyses d’ordination
 
 ``` r
@@ -1316,48 +1418,53 @@ ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
 
     ## Run 0 stress 0.08043117 
-    ## Run 1 stress 0.08616061 
-    ## Run 2 stress 0.08616061 
-    ## Run 3 stress 0.09477219 
-    ## Run 4 stress 0.08616061 
-    ## Run 5 stress 0.1262108 
+    ## Run 1 stress 0.0947711 
+    ## Run 2 stress 0.08043117 
+    ## ... Procrustes: rmse 2.3634e-06  max resid 7.250379e-06 
+    ## ... Similar to previous best
+    ## Run 3 stress 0.08076341 
+    ## ... Procrustes: rmse 0.01056525  max resid 0.03252816 
+    ## Run 4 stress 0.08076337 
+    ## ... Procrustes: rmse 0.01050682  max resid 0.03233701 
+    ## Run 5 stress 0.1010633 
     ## Run 6 stress 0.08043117 
-    ## ... Procrustes: rmse 4.427886e-06  max resid 9.548442e-06 
-    ## ... Similar to previous best
-    ## Run 7 stress 0.08616061 
-    ## Run 8 stress 0.08616061 
-    ## Run 9 stress 0.1212044 
-    ## Run 10 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01052096  max resid 0.03238294 
-    ## Run 11 stress 0.08043116 
     ## ... New best solution
-    ## ... Procrustes: rmse 1.989558e-06  max resid 4.349416e-06 
+    ## ... Procrustes: rmse 3.425505e-06  max resid 8.509785e-06 
     ## ... Similar to previous best
-    ## Run 12 stress 0.1212044 
-    ## Run 13 stress 0.08043116 
-    ## ... Procrustes: rmse 1.714786e-06  max resid 5.275454e-06 
+    ## Run 7 stress 0.08043117 
+    ## ... Procrustes: rmse 5.223432e-06  max resid 1.370256e-05 
     ## ... Similar to previous best
-    ## Run 14 stress 0.08616061 
-    ## Run 15 stress 0.09477191 
-    ## Run 16 stress 0.08616061 
-    ## Run 17 stress 0.08043117 
-    ## ... Procrustes: rmse 2.092905e-06  max resid 4.740124e-06 
-    ## ... Similar to previous best
-    ## Run 18 stress 0.08076339 
-    ## ... Procrustes: rmse 0.01054882  max resid 0.03247284 
-    ## Run 19 stress 0.1262108 
-    ## Run 20 stress 0.08616061 
-    ## *** Best solution repeated 3 times
+    ## Run 8 stress 0.09477204 
+    ## Run 9 stress 0.08616061 
+    ## Run 10 stress 0.08076342 
+    ## ... Procrustes: rmse 0.01059089  max resid 0.03260887 
+    ## Run 11 stress 0.08076337 
+    ## ... Procrustes: rmse 0.01050198  max resid 0.03231896 
+    ## Run 12 stress 0.08076337 
+    ## ... Procrustes: rmse 0.01050426  max resid 0.03232656 
+    ## Run 13 stress 0.1212044 
+    ## Run 14 stress 0.135814 
+    ## Run 15 stress 0.08076339 
+    ## ... Procrustes: rmse 0.01055262  max resid 0.03248401 
+    ## Run 16 stress 0.08076336 
+    ## ... Procrustes: rmse 0.01049098  max resid 0.03228311 
+    ## Run 17 stress 0.08076336 
+    ## ... Procrustes: rmse 0.01048522  max resid 0.0322653 
+    ## Run 18 stress 0.08076337 
+    ## ... Procrustes: rmse 0.01049517  max resid 0.03229684 
+    ## Run 19 stress 0.1212044 
+    ## Run 20 stress 0.1336964 
+    ## *** Best solution repeated 2 times
 
 ### Commentaires
 
-*transform_sample_counts(ps, function(otu) otu/sum(otu))* Permet de
+<i>transform_sample_counts(ps, function(otu) otu/sum(otu))<i> permet de
 convertir les comptes bruts de séquences en abondances relatives
 (proportions), ce qui permet de normaliser les échantillons pour qu’ils
 soient comparables, indépendamment de leur profondeur de séquençage
 totale.
 
-*ordinate(…, method=“NMDS”, distance=“bray”)* Permet de lancer une
+<i>ordinate(…, method=“NMDS”, distance=“bray”)<i> permet de lancer une
 ordination par NMDS (Non-metric Multidimensional Scaling) basée sur la
 distance de Bray-Curtis. Cet outil permet de calculer les différences de
 composition microbienne (diversité bêta) entre tous vos échantillons
@@ -1367,10 +1474,13 @@ pour pouvoir les projeter sur un graphique en 2 dimensions.
 
 Le paramètre à regarder dans le resultat est le stress. Le meilleur
 score de stress affiché est d’environ 0,0804 (run 0 mais aussi dans
-d’autre). Pour interpréter un stress en NMDS il faut savoir que : - \<
-0.05 : Excellent - \< 0.10 : Très bon (fiable, c’est le cas ici) - \<
-0.20 : Correct / acceptable - \> 0.20 : À interpréter avec prudence
-(mauvaise représentation en 2D).
+d’autre). Pour interpréter un stress en NMDS il faut savoir que :
+
+- **\< 0.05** : Excellent
+- **\< 0.10** : Très bon (fiable, c’est le cas ici)
+- **\< 0.20** : Correct / acceptable
+- **\> 0.20** : À interpréter avec prudence (mauvaise représentation en
+  2D).
 
 Ici les valeurs de stress (autour de 0,08 à 0,13) est bien. Cela
 signifie que l’algorithme a réussi à compresser les données
@@ -1378,22 +1488,25 @@ multidimensionnelles dans un espace à 2 dimensions sans trop de
 distorsion. Le graphique d’ordination d’après sera fiable et robuste
 pour analyser les regroupements de vos échantillons.
 
+------------------------------------------------------------------------
+
 ## Visualiser la bêta-diversité :
 
 ``` r
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
 
-![](DADA_2_files/figure-gfm/unnamed-chunk-34-1.png)<!-- --> \###
-Commentaires
+![](DADA_2_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
-*plot_ordination(…)* C’est la fonction de phyloseq qui prend les
+### Commentaires
+
+<i>plot_ordination(…)<i> c’est la fonction de phyloseq qui prend les
 résultats du calcul d’ordination (le NMDS juste avant) et les transforme
 en un graphique visuel en 2 dimensions.
 
-*color=“When”* Permet de colorer chaque point selon sa période (Early en
-orange, Late en bleu) pour voir visuellement si les échantillons se
-regroupent par similarité de composition.
+<i>color=“When”<i> permet de colorer chaque point selon sa période
+(Early en orange, Late en bleu) pour voir visuellement si les
+échantillons se regroupent par similarité de composition.
 
 ### Interprétation
 
@@ -1412,14 +1525,18 @@ ressemblent pas du tout sur le plan de la composition.
 ### Conclusion :
 
 En combinant ce graphique avec celui de la diversité alpha vu juste
-avant, on peut dire que : - La diversité alpha (richesse interne) était
-stable. Les sujets hébergeaient globalement le même nombre d’espèces et
-le même équilibre au début et à la fin de l’étude. - La diversité bêta
-(composition des espèces) a totalement changé. Grâce au NMDS, on voit
-que la nature de ces espèces a complètement changé. Les bactéries
-présentes au jour 0 ont été supplantées ou ont évolué pour laisser place
-à un cortège bactérien complètement différent au jour 150, tout en
-conservant un niveau de diversité globale similaire.
+avant, on peut dire que :
+
+- La diversité alpha (richesse interne) était stable. Les sujets
+  hébergeaient globalement le même nombre d’espèces et le même équilibre
+  au début et à la fin de l’étude.
+- La diversité bêta (composition des espèces) a totalement changé. Grâce
+  au NMDS, on voit que la nature de ces espèces a complètement changé.
+  Les bactéries présentes au jour 0 ont été supplantées ou ont évolué
+  pour laisser place à un cortège bactérien complètement différent au
+  jour 150, tout en conservant un niveau de diversité globale similaire.
+
+------------------------------------------------------------------------
 
 ## Diagramme à barres
 
@@ -1430,24 +1547,25 @@ ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
 
-![](DADA_2_files/figure-gfm/unnamed-chunk-35-1.png)<!-- --> \###
-Commentaires
+![](DADA_2_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
-*top20 \<- names(sort(taxa_sums(ps), decreasing=TRUE))\[1:20\]* Permet
-de trier tous les ASV du plus abondant au moins abondant, puis de
+### Commentaires
+
+<i>top20 \<- names(sort(taxa_sums(ps), decreasing=TRUE))\[1:20\]<i>
+permet de trier tous les ASV du plus abondant au moins abondant, puis de
 sélectionner les 20 plus importants de l’ensemble du jeu de données.
 
-*ps.top20 \<- transform_sample_counts(…)* Permet de convertir les
+<i>ps.top20 \<- transform_sample_counts(…)<i> permet de convertir les
 comptes bruts en proportions (abondances relatives) pour que les
 échantillons soient comparables.
 
-*ps.top20 \<- prune_taxa(top20, ps.top20)* Permet de filtrer l’objet
+<i>ps.top20 \<- prune_taxa(top20, ps.top20)<i> permet de filtrer l’objet
 pour ne garder que ces 20 ASV phares.
 
-*plot_bar(…, fill=“Family”) + facet_wrap(~When, scales=“free_x”)* Permet
-de créer un diagramme en barres empilées coloré par famille bactérienne,
-en séparant visuellement les échantillons de la période Early de ceux de
-la période Late.
+<i>plot_bar(…, fill=“Family”) + facet_wrap(~When, scales=“free_x”)<i>
+permet de créer un diagramme en barres empilées coloré par famille
+bactérienne, en séparant visuellement les échantillons de la période
+Early de ceux de la période Late.
 
 ### Interprétation
 
@@ -1458,8 +1576,8 @@ précoce-tardive.
 Il y a une grande similarité visuelle. Si l’on compare les barres de la
 période Early et celles de la période Late, on constate qu’elles sont
 dominées par les mêmes blocs de couleurs, en particulier la grande bande
-bleue représentant la famille des *Muribaculaceae*, ainsi que les
-*Bacteroidaceae* (en rouge) ou les *Rikenellaceae* (en violet).
+bleue représentant la famille des <i>Muribaculaceae<i>, ainsi que les
+<i>Bacteroidaceae<i> (en rouge) ou les <i>Rikenellaceae<i> (en violet).
 
 Il y a une contradiction avec le NMDS. Bien que l’analyse d’ordination
 précédente (le NMDS) ait prouvé que les échantillons des deux périodes
@@ -1472,15 +1590,17 @@ globalement les mêmes), mais plutôt de variations plus fines, de
 rééquilibrages subtils des proportions ou de modifications au niveau
 d’ASV moins abondants.
 
-Il y a quelques différence à noter : - Il y a une régularité au niveau
-du profil Late. Les barres de la période Late ont une structure de
-couleurs et de proportions beaucoup plus homogène et stable d’un
-échantillon à l’autre. On voit plus de *Lactobacillaceae* (en turquoise)
-et de *Erysipelotrichaceae* (en marron) par rapport a la partie Early
-qui n’en ont presque pas. - Il y a une variabilité au niveau de la
-période Early. On observe davantage de fluctuations au début. Par
-exemple, certains échantillons présentent des proportions plus variables
-de *Lactobacillaceae* (en turquoise) ou des blocs divers, ainsi qu’une
-barre grise plus visible (les NA ou taxons non classés). Ici on voit
-plus de *Lachnospiraceae* (en vert) par rapport a la partie Late qui
-n’en ont presque pas.
+Il y a quelques différence à noter :
+
+- Il y a une régularité au niveau du profil Late. Les barres de la
+  période Late ont une structure de couleurs et de proportions beaucoup
+  plus homogène et stable d’un échantillon à l’autre. On voit plus de
+  <i>Lactobacillaceae<i> (en turquoise) et de <i>Erysipelotrichaceae<i>
+  (en marron) par rapport a la partie Early qui n’en ont presque pas.
+- Il y a une variabilité au niveau de la période Early. On observe
+  davantage de fluctuations au début. Par exemple, certains échantillons
+  présentent des proportions plus variables de <i>Lactobacillaceae<i>
+  (en turquoise) ou des blocs divers, ainsi qu’une barre grise plus
+  visible (les NA ou taxons non classés). Ici on voit plus de
+  <i>Lachnospiraceae<i> (en vert) par rapport a la partie Late qui n’en
+  ont presque pas.
